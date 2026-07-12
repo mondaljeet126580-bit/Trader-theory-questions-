@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced MCQ Hub & Mock Simulator</title>
+    <style>
+        /* ==========================================================================
+           ১. গ্লোবাল থিমিং ও স্ক্রিনশট বেস ডিজাইন
+           ========================================================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0b1120;
+            color: #ffffff;
+            padding: 20px 10px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .no-print { display: block; }
+        .hidden { display: none !important; }
+
+        /* গ্লাস মরফিজম প্যানেল */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        h2, h3, h4 {
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        /* হেডিং ও সাব-হেডিং */
+        .main-header {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            line-height: 1.3;
+            background: linear-gradient(to right, #3b82f6, #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sub-header {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 25px;
+        }
+
+        /* সাবজেক্ট সিলেক্টর ট্যাব */
+        .subject-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 12px 5px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            text-align: center;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
+        }
+
+        /* ইনপুট ফিল্ড ও ড্রপডাউন */
+        .input-field {
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+        /* মোড বোতাম (স্ক্রিনশটের মত গ্রেডিয়েন্ট) */
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:active { transform: scale(0.98); }
+        .btn-read { background: linear-gradient(90deg, #06b6d4, #10b981); }
+        .btn-mock { background: linear-gradient(90deg, #7c3aed, #c084fc); }
+        .btn-print { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+        .btn-secondary { background: #334155; color: white; padding: 10px; font-size: 14px; border-radius: 8px; }
+        .btn-danger { background: #ef4444; }
+
+        /* ==========================================================================
+           ২. কোশ্চেন কার্ড ডিজাইন (হুবহু স্ক্রিনশটের মতো)
+           ========================================================================== */
+        .card-wrapper {
+            background: linear-gradient(90deg, #3b82f6, #06b6d4);
+            border-radius: 20px;
+            padding-top: 55px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .card-strip-text {
+            position: absolute;
+            top: 12px;
+            left: 20px;
+            color: white;
+        }
+
+        .card-strip-title { font-size: 16px; font-weight: bold; }
+        .card-strip-sub { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+
+        .question-card {
+            background-color: #ffffff;
+            color: #1e293b;
+            border-radius: 0 0 20px 20px;
+            padding: 20px;
+        }
+
+        .question-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* বামপাশের অরেঞ্জ-পিংক গ্রেডিয়েন্ট নম্বর বক্স */
+        .number-box {
+            background: linear-gradient(to bottom, #f97316, #ec4899);
+            color: white;
+            width: 55px;
+            height: 90px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .question-text-block { flex-grow: 1; }
+        .q-title { font-size: 18px; font-weight: bold; color: #0f172a; margin-bottom: 8px; }
+        
+        .q-lang {
+            font-size: 15px;
+            line-height: 1.4;
+            margin-bottom: 6px;
+            color: #334155;
+        }
+        .q-lang strong { color: #0f172a; }
+
+        /* অপশনস লিস্ট */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-item {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #334155;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .option-prefix {
+            color: #7c3aed;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* অপশন হাইলাইট ম্যাট্রিক্স */
+        .option-item.correct { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #15803d !important; }
+        .option-item.wrong { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #b91c1c !important; }
+        .option-item.selected-active { background-color: #e0e7ff; border-color: #6366f1; }
+
+        .bookmark-star {
+            position: absolute;
+            top: 12px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            color: #cbd5e1;
+            background: none;
+            border: none;
+        }
+        .bookmark-star.active { color: #f59e0b; }
+
+        /* প্রোগ্রেস ও টাইমার */
+        .telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            background: #334155;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #06b6d4);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* পেজিনেশন ও অ্যাকশন কন্ট্রোল */
+        .pagination-controls, .mock-controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 12px;
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-align: center;
+        }
+        .btn-skip { background-color: #d97706; border-color: #d97706; }
+        .btn-submit { background-color: #10b981; border-color: #10b981; }
+
+        .btn-home {
+            background: none;
+            border: none;
+            color: #3b82f6;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        /* স্ট্যাটাস ব্যাজ */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            float: right;
+            margin-top: -30px;
+        }
+        .status-badge.correct { background: #22c55e; color: white; }
+        .status-badge.wrong { background: #ef4444; color: white; }
+        .status-badge.skipped { background: #f59e0b; color: white; }
+
+        /* প্রিন্ট মিডিয়া রুলস */
+        @media print {
+            body { background: white; color: black; padding: 0; }
+            .no-print { display: none !important; }
+            .view-section { display: block !important; }
+            .card-wrapper { box-shadow: none; page-break-inside: avoid; margin-bottom: 30px; }
+            .option-item.correct { background-color: #dcfce7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- ==========================================================================
+             ড্যাশবোর্ড ভিউ (HOME)
+             ========================================================================== -->
+        <div id="dashboard-view" class="view-section no-print">
+            <div class="main-header" id="dynamic-title">Workshop / Welding MCQ Study + Mock Test</div>
+            <div class="sub-header">Read mode, full-screen mock test, range selectors, search, bookmarks & summary</div>
+
+            <!-- সাবজেক্ট ট্যাব সুইচিং সিস্টেম -->
+            <div class="subject-tabs">
+                <button class="tab-btn active" onclick="App.switchSubject('trade_theory', this)">Trade Theory</button>
+                <button class="tab-btn" onclick="App.switchSubject('es', this)">ES</button>
+                <button class="tab-btn" onclick="App.switchSubject('wcs', this)">WCS</button>
+            </div>
+
+            <!-- ফিল্টার ও কোশ্চেন রেঞ্জ সিলেক্টর প্যানেল -->
+            <div class="glass-panel">
+                <h4>🎛️ Scope Range Selector</h4>
+                <div class="grid-2" style="margin-top: 10px;">
+                    <div>
+                        <label style="font-size:12px; color:#94a3b8;">From Index</label>
+                        <input type="number" id="range-from" class="input-field" value="1" min="1">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#94a3b8;">To Index</label>
+                        <input type="number" id="range-to" class="input-field" value="100">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <button class="btn-secondary" onclick="App.applyRange()">Apply Window Range</button>
+                    <button class="btn-secondary" style="background:#475569;" onclick="App.resetRange()">Reset All Pool</button>
+                </div>
+
+                <!-- কুইক সিলেক্ট প্রিসেট বোতাম -->
+                <div style="margin-top: 15px;">
+                    <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:5px;">Quick Presets:</label>
+                    <div class="grid-3">
+                        <button class="btn-secondary" style="padding:6px;" onclick="App.quickSetRange(1,30)">1-30</button>
+                        <button class="btn-secondary" style="padding:6px;" onclick="App.quickSetRange(31,60)">31-60</button>
+                        <button class="btn-secondary" style="padding:6px;" onclick="App.quickSetRange(61,90)">61-90</button>
+                        <button class="btn-secondary" style="padding:6px;" onclick="App.quickSetRange(91,120)">91-120</button>
+                        <button class="btn-secondary" style="padding:6px;" onclick="App.quickSetRange(1,99999)">All Pool</button>
+                        <button class="btn-secondary" style="padding:6px; background:#b45309;" onclick="App.enableSpecialFilter('BOOKMARK')">★ Bookmarked</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- মক টেস্ট কনফিগারেশন প্যানেল -->
+            <div class="glass-panel">
+                <h4>⚡ Mock Test Configurations</h4>
+                <div class="grid-3" style="margin-top: 10px;">
+                    <div>
+                        <label style="font-size:11px; color:#94a3b8;">Questions Size</label>
+                        <select id="mock-size-select" class="input-field">
+                            <option value="10">10 Qs</option>
+                            <option value="20">20 Qs</option>
+                            <option value="30" selected>30 Qs</option>
+                            <option value="50">50 Qs</option>
+                            <option value="100">100 Qs</option>
+                            <option value="ALL">Max Size</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px; color:#94a3b8;">Countdown Timer</label>
+                        <select id="mock-timer-select" class="input-field">
+                            <option value="15">15 Mins</option>
+                            <option value="30" selected>30 Mins</option>
+                            <option value="60">60 Mins</option>
+                            <option value="0">Unlimited</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:11px; color:#94a3b8;">Special Targets</label>
+                        <select id="mock-target-select" class="input-field">
+                            <option value="ALL" selected>Active Window</option>
+                            <option value="WRONG">Wrong Only</option>
+                            <option value="SKIPPED">Skipped Only</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- প্রাইমারি অ্যাকশন বোতাম ট্রিপলেট -->
+            <div class="mode-buttons">
+                <button class="btn btn-read" onclick="App.startReadMode()">Launch Read Mode</button>
+                <button class="btn btn-mock" onclick="App.startMockMode()">Initialize Mock Environment</button>
+                <button class="btn btn-print" onclick="window.print()">Print / Save as PDF</button>
+            </div>
+
+            <!-- মেমরি ক্যাশ ইনফো ট্র্যাকার -->
+            <div style="text-align:center; font-size:12px; color:#64748b;">
+                Active Segment Loaded: <span id="telemetry-total-count">0</span> Questions | Cache State Saved Automatically
+            </div>
+        </div>
+
+        <!-- ==========================================================================
+             লিনিয়ার স্টাডি ভিউ প্যানেল (READ MODE)
+             ========================================================================== -->
+        <div id="read-view" class="view-section hidden">
+            <div class="back-home-container no-print">
+                <button class="btn-home" onclick="App.goHome()">← Back to Main Menu</button>
+                <!-- কিওয়ার্ড এবং ইনডেক্স সার্চ ইঞ্জিন -->
+                <input type="text" id="search-input" class="input-field" placeholder="Search by number or keyword phrase..." oninput="App.executeSearch()">
+            </div>
+            
+            <div id="read-list-target"></div>
+
+            <!-- অপ্টিমাইজড পেজিনেশন কন্ট্রোল (পারফরম্যান্স বুস্টার) -->
+            <div class="pagination-controls no-print" id="read-pagination-bar">
+                <button class="control-btn" onclick="App.shiftReadPage(-1)">Previous Page</button>
+                <span id="read-page-indicator" style="align-self:center; font-size:13px; color:#94a3b8;">Page 1 of 1</span>
+                <button class="control-btn" onclick="App.shiftReadPage(1)">Next Page</button>
+            </div>
+        </div>
+
+        <!-- ==========================================================================
+             মক এক্সাম ওয়ার্কস্পেস প্যানেল (MOCK TEST)
+             ========================================================================== -->
+        <div id="mock-view" class="view-section hidden no-print">
+            <div class="telemetry-row">
+                <button class="btn-home" style="margin:0;" onclick="App.goHome()">← Quit Test</button>
+                <div id="mock-timer-display" style="font-size:20px; font-weight:bold; color:#ef4444;">00:00</div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="mock-progress-bar"></div>
+            </div>
+
+            <div id="mock-card-target"></div>
+
+            <div class="mock-controls">
+                <button class="control-btn" onclick="App.navigateMock(-1)">Previous</button>
+                <button class="control-btn btn-skip" onclick="App.skipMock()">Skip</button>
+                <button class="control-btn" onclick="App.navigateMock(1)">Next</button>
+                <button class="control-btn btn-submit" onclick="App.submitMock()">Submit Assessment</button>
+            </div>
+        </div>
+
+        <!-- ==========================================================================
+             ফলাফল এবং পারফরম্যান্স রিভিউ শিট (RESULT & REVIEW)
+             ========================================================================== -->
+        <div id="result-view" class="view-section hidden">
+            <div class="back-home-container no-print">
+                <button class="btn-home" onclick="App.goHome()">← Return to Dashboard</button>
+            </div>
+
+            <div class="glass-panel text-center" style="text-align:center;">
+                <h2 style="font-size:32px; color:#10b981;" id="result-percentage">0% Marks Secured</h2>
+                <div class="grid-3" style="margin-top:15px; text-align:center; font-size:14px;">
+                    <div style="background:rgba(34,197,94,0.1); padding:10px; border-radius:8px; border:1px solid #22c55e; color:#22c55e;">Correct: <b id="res-correct">0</b></div>
+                    <div style="background:rgba(239,68,68,0.1); padding:10px; border-radius:8px; border:1px solid #ef4444; color:#ef4444;">Wrong: <b id="res-wrong">0</b></div>
+                    <div style="background:rgba(245,158,11,0.1); padding:10px; border-radius:8px; border:1px solid #f59e0b; color:#f59e0b;">Skipped: <b id="res-skipped">0</b></div>
+                </div>
+                <div style="margin-top:12px; font-size:13px; color:#94a3b8;" id="res-summary-line">Total Answered: 0 | Pool Total: 0</div>
+            </div>
+
+            <h3 style="margin: 20px 0 10px 0;" class="no-print">Trace Evaluation Review Logs:</h3>
+            <div id="review-list-target"></div>
+        </div>
+
+    </div>
+
+    <!-- ==========================================================================
+         ৩. ডেটাবেস অবজেক্ট অ্যারে (ম্যানুয়াল এডিটিং এরিয়া)
+         ========================================================================== -->
+    <script>
+        /* 
+          ভবিষ্যতে নতুন প্রশ্ন এড করার জন্য শুধুমাত্র নিচে নির্দিষ্ট ক্যাটাগরির ভেতরে অবজেক্টটি পেস্ট করে দিন।
+          ক্লিন স্ট্রাকচার মেনটেইন করার জন্য প্রতি সাবজেক্টের নিচে স্পষ্ট হেডিং ভাগ করা হলো।
+        */
+        const questionsDatabase = {
+            
+            // ==================== [TRADE THEORY QUESTIONS START] ====================
+            trade_theory: [
+                {
+                    no: 1,
+                    en: "Which operation is to remove burrs from a plate after cutting?",
+                    bn: "কাটার পর একটি প্লেট থেকে বার (burrs) অপসারণ করার জন্য কোন অপারেশন করা হয়?",
+                    options: {
+                        A: "Brushing / ব্রাশ করা",
+                        B: "Filing / ফাইলিং",
+                        C: "Scraping / স্ক্র্যাপ করা",
+                        D: "Chiselling / চিজেলিং"
+                    },
+                    correct: "B"
+                },
+                {
+                    no: 2,
+                    en: "Which welding process uses a non-consumable electrode?",
+                    bn: "কোন ওয়েল্ডিং প্রক্রিয়ায় নন-কনজিউমেবল ইলেকট্রোড ব্যবহার করা হয়?",
+                    options: {
+                        A: "MIG Welding (মিগ ওয়েল্ডিং)",
+                        B: "TIG Welding (টিগ ওয়েল্ডিং)",
+                        C: "MMAW (এমএমএডব্লিউ)",
+                        D: "Submerged Arc (সাবমার্জড আর্ক)"
+                    },
+                    correct: "B"
+                }
+                // <-- নতুন Trade Theory প্রশ্ন এখানে পেস্ট করুন
+            ],
+
+            // ==================== [ES (EMPLOYABILITY SKILLS) START] ====================
+            es: [
+                {
+                    no: 1,
+                    en: "A person who is associated with the starting of a business is called?",
+                    bn: "ব্যবসা শুরু করার সাথে যুক্ত ব্যক্তিকে কী বলা হয়?",
+                    options: {
+                        A: "Merchant (বণিক)",
+                        B: "Entrepreneur (উদ্যোক্তা)",
+                        C: "Businessman (ব্যবসায়ী)",
+                        D: "Sales Executive (সেলস এক্সিকিউটিভ)"
+                    },
+                    correct: "B"
+                },
+                {
+                    no: 2,
+                    en: "Which one is considered a core barrier to effective communication?",
+                    bn: "কার্যকর যোগাযোগের ক্ষেত্রে নিচের কোনটিকে একটি মূল বাধা হিসেবে বিবেচনা করা হয়?",
+                    options: {
+                        A: "Active Listening (সক্রিয় শ্রবণ)",
+                        B: "Emotional Disconnect (মানসিক দূরত্ব)",
+                        C: "Clear Message (স্পষ্ট বার্তা)",
+                        D: "Proper Channel (সঠিক মাধ্যম)"
+                    },
+                    correct: "B"
+                }
+                // <-- নতুন ES প্রশ্ন এখানে পেস্ট করুন
+            ],
+
+            // ==================== [WCS (WORKSHOP CALCULATION & SCIENCE) START] ====================
+            wcs: [
+                {
+                    no: 1,
+                    en: "What is the unit of work in SI system?",
+                    bn: "SI পদ্ধতিতে কার্যের একক কী?",
+                    options: {
+                        A: "Newton (নিউটনের)",
+                        B: "Joule (জুল)",
+                        C: "Erg (আর্গ)",
+                        D: "Watt (ওয়াট)"
+                    },
+                    correct: "B"
+                },
+                {
+                    no: 2,
+                    en: "What is the square root of 0.0009?",
+                    bn: "0.0009 এর বর্গমূল কত?",
+                    options: {
+                        A: "0.03",
+                        B: "0.3",
+                        C: "0.003",
+                        D: "3"
+                    },
+                    correct: "A"
+                }
+                // <-- নতুন WCS প্রশ্ন এখানে পেস্ট করুন
+            ]
+        };
+    </script>
+
+    <!-- ==========================================================================
+         ৪. ভ্যানিলা জাভাস্ক্রিপ্ট মাস্টার কোর কন্ট্রোল ইঞ্জিন
+         ========================================================================== -->
+    <script>
+        const App = {
+            currentSubject: 'trade_theory',
+            configRange: { from: 1, to: 100, specialFilter: null },
+            readModeState: { currentPage: 1, itemsPerPage: 15, searchQuery: "" },
+            mockState: { activePool: [], currentIndex: 0, selections: {}, skipped: {}, timerInterval: null, timeRemaining: 0 },
+            
+            // পারসিস্টেন্ট মেমরি স্টোরেজ অবজেক্টস
+            cachedBookmarks: {},
+            cachedWrongTracker: {},
+
+            init: function() {
+                this.loadLocalStorageBuffers();
+                this.syncMaxBounds();
+                this.goHome();
+            },
+
+            loadLocalStorageBuffers: function() {
+                try {
+                    this.cachedBookmarks = JSON.parse(localStorage.getItem('HUB_BKMKS')) || {};
+                    this.cachedWrongTracker = JSON.parse(localStorage.getItem('HUB_WRONGS')) || {};
+                    const savedConfig = JSON.parse(localStorage.getItem('HUB_CONFIG'));
+                    if (savedConfig) {
+                        this.configRange.from = savedConfig.from || 1;
+                        this.configRange.to = savedConfig.to || 100;
+                    }
+                } catch(e) { console.error("Cache corrupted, auto flushing.", e); }
+            },
+
+            saveLocalStorageBuffers: function() {
+                localStorage.setItem('HUB_BKMKS', JSON.stringify(this.cachedBookmarks));
+                localStorage.setItem('HUB_WRONGS', JSON.stringify(this.cachedWrongTracker));
+                localStorage.setItem('HUB_CONFIG', JSON.stringify({from: this.configRange.from, to: this.configRange.to}));
+            },
+
+            syncMaxBounds: function() {
+                const total = questionsDatabase[this.currentSubject].length;
+                document.getElementById('telemetry-total-count').textContent = total;
+                document.getElementById('range-from').value = this.configRange.from;
+                
+                // যদি ইউজারের To ভ্যালু ডেটাবেসের চেয়ে বেশি বা ডিফল্ট ১০০ থাকে, তবে রিয়েল ম্যাক্সিমাম সেট হবে
+                if(this.configRange.to > total || this.configRange.to === 100) {
+                    this.configRange.to = total || 1;
+                }
+                document.getElementById('range-to').value = this.configRange.to;
+            },
+
+            switchSubject: function(subKey, element) {
+                this.currentSubject = subKey;
+                this.configRange.specialFilter = null;
+                
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                element.classList.add('active');
+
+                const titleMap = {
+                    trade_theory: "Trade Theory MCQ Study + Mock Test",
+                    es: "Employability Skills (ES) MCQ Study + Mock Test",
+                    wcs: "Workshop Calculation & Science MCQ Study + Mock Test"
+                };
+                document.getElementById('dynamic-title').textContent = titleMap[subKey];
+                this.syncMaxBounds();
+            },
+
+            switchView: function(viewId) {
+                document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+                document.getElementById(viewId).classList.remove('hidden');
+                window.scrollTo(0,0);
+            },
+
+            goHome: function() {
+                if(this.mockState.timerInterval) clearInterval(this.mockState.timerInterval);
+                this.switchView('dashboard-view');
+                this.syncMaxBounds();
+            },
+
+            /* রেঞ্জ মেমরি হ্যান্ডলিং */
+            applyRange: function() {
+                this.configRange.from = parseInt(document.getElementById('range-from').value) || 1;
+                this.configRange.to = parseInt(document.getElementById('range-to').value) || 99999;
+                this.configRange.specialFilter = null;
+                this.saveLocalStorageBuffers();
+                alert("Segment isolation boundary successfully mapped.");
+            },
+
+            resetRange: function() {
+                this.configRange.from = 1;
+                this.configRange.to = questionsDatabase[this.currentSubject].length;
+                this.configRange.specialFilter = null;
+                document.getElementById('range-from').value = this.configRange.from;
+                document.getElementById('range-to').value = this.configRange.to;
+                this.saveLocalStorageBuffers();
+            },
+
+            quickSetRange: function(f, t) {
+                this.configRange.from = f;
+                this.configRange.to = Math.min(t, questionsDatabase[this.currentSubject].length);
+                this.configRange.specialFilter = null;
+                document.getElementById('range-from').value = this.configRange.from;
+                document.getElementById('range-to').value = this.configRange.to;
+                this.saveLocalStorageBuffers();
+                alert(`Quick set loaded: Question ${this.configRange.from} to ${this.configRange.to}`);
+            },
+
+            enableSpecialFilter: function(filterType) {
+                this.configRange.specialFilter = filterType;
+                alert(`Special filter: Loaded only [${filterType}] items within database.`);
+            },
+
+            getActiveDataset: function() {
+                let pool = questionsDatabase[this.currentSubject];
+                
+                // অ্যাপ্লাই রেঞ্জ উইন্ডো ফিল্টারিং
+                pool = pool.filter(q => q.no >= this.configRange.from && q.no <= this.configRange.to);
+
+                // স্পেশাল বুকমার্ক ফিল্টার লাগু থাকলে
+                if(this.configRange.specialFilter === 'BOOKMARK') {
+                    pool = pool.filter(q => this.cachedBookmarks[this.currentSubject + '_' + q.no]);
+                }
+                return pool;
+            },
+
+            /* ==========================================================================
+               ৫. HTML ডাইনামিক রেন্ডারিং আর্কিটেকচার
+               ========================================================================== */
+            createCardElementHTML: function(q, indexPosition, config = {}) {
+                const globalKey = this.currentSubject + '_' + q.no;
+                const isBookmarked = this.cachedBookmarks[globalKey] ? 'active' : '';
+                const userSelected = config.userSelectedOption || null;
+                const revealCorrect = config.revealCorrectAnswers || false;
+
+                let optionsBlock = '';
+                for(let key in q.options) {
+                    let evaluationClass = '';
+                    if (revealCorrect && key === q.correct) {
+                        evaluationClass = 'correct';
+                    } else if (userSelected && key === userSelected && userSelected !== q.correct) {
+                        evaluationClass = 'wrong';
+                    } else if (!revealCorrect && userSelected && key === userSelected) {
+                        evaluationClass = 'selected-active';
+                    }
+
+                    let clickActionStr = config.interactiveMode ? `onclick="App.registerMockResponse(${indexPosition}, '${key}')"` : '';
+                    optionsBlock += `
+                        <div class="option-item ${evaluationClass}" ${clickActionStr}>
+                            <span class="option-prefix">${key})</span> ${q.options[key]}
+                        </div>
+                    `;
+                }
+
+                // মক রিভিউ পেজের জন্য ব্যাজ জেনারেটর
+                let statusBadgeHTML = '';
+                if(config.appendStatusBadge) {
+                    if(!userSelected) statusBadgeHTML = `<span class="status-badge skipped">Skipped</span>`;
+                    else if(userSelected === q.correct) statusBadgeHTML = `<span class="status-badge correct">Correct</span>`;
+                    else statusBadgeHTML = `<span class="status-badge wrong">Wrong</span>`;
+                }
+
+                return `
+                    <div class="card-wrapper">
+                        <div class="card-strip-text">
+                            <div class="card-strip-title">${document.getElementById('dynamic-title').textContent.split(" MCQ")[0]} Module</div>
+                            <div class="card-strip-sub">Read mode • English + বাংলা • Question ${q.no}</div>
+                        </div>
+                        <div class="question-card">
+                            <button class="bookmark-star ${isBookmarked}" onclick="App.toggleBookmarkDirect('${this.currentSubject}', ${q.no}, this)">★</button>
+                            <div class="question-row">
+                                <div class="number-box">${q.no}</div>
+                                <div class="question-text-block">
+                                    <div class="q-title">Question ${q.no}</div>
+                                    ${statusBadgeHTML}
+                                    <div class="q-lang"><strong>English:</strong> ${q.en}</div>
+                                    <div class="q-lang"><strong>Bengali:</strong> ${q.bn}</div>
+                                </div>
+                            </div>
+                            <div class="options-container">${optionsBlock}</div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            toggleBookmarkDirect: function(sub, num, element) {
+                const key = sub + '_' + num;
+                if(this.cachedBookmarks[key]) {
+                    delete this.cachedBookmarks[key];
+                    element.classList.remove('active');
+                } else {
+                    this.cachedBookmarks[key] = true;
+                    element.classList.add('active');
+                }
+                this.saveLocalStorageBuffers();
+            },
+
+            /* READ MODE OPERATIONS */
+            startReadMode: function() {
+                this.readModeState.currentPage = 1;
+                this.readModeState.searchQuery = "";
+                document.getElementById('search-input').value = "";
+                this.renderReadContainerList();
+                this.switchView('read-view');
+            },
+
+            renderReadContainerList: function() {
+                let dataset = this.getActiveDataset();
+                const target = document.getElementById('read-list-target');
+                target.innerHTML = '';
+
+                // সার্চ কোয়েরি ফিল্টার রান করুন (যদি থাকে)
+                if(this.readModeState.searchQuery.trim() !== "") {
+                    const term = this.readModeState.searchQuery.toLowerCase();
+                    dataset = dataset.filter(q => q.no.toString() === term || q.en.toLowerCase().includes(term) || q.bn.toLowerCase().includes(term));
+                }
+
+                if(dataset.length === 0) {
+                    target.innerHTML = `<p style="text-align:center; padding:30px; color:#64748b;">No matching dataset found inside active boundary windows.</p>`;
+                    document.getElementById('read-pagination-bar').classList.add('hidden');
+                    return;
+                }
+
+                // পারফরম্যান্স ঠিক রাখার জন্য পেজিনেশন স্লাইসিং আর্কিটেকচার
+                document.getElementById('read-pagination-bar').classList.remove('hidden');
+                const totalItems = dataset.length;
+                const totalPages = Math.ceil(totalItems / this.readModeState.itemsPerPage);
+                
+                if(this.readModeState.currentPage > totalPages) this.readModeState.currentPage = totalPages || 1;
+                
+                const startIdx = (this.readModeState.currentPage - 1) * this.readModeState.itemsPerPage;
+                const endIdx = Math.min(startIdx + this.readModeState.itemsPerPage, totalItems);
+                
+                document.getElementById('read-page-indicator').textContent = `Page ${this.readModeState.currentPage} of ${totalPages} (Items ${startIdx+1}-${endIdx} of ${totalItems})`;
+
+                const viewSlice = dataset.slice(startIdx, endIdx);
+                viewSlice.forEach((q, i) => {
+                    target.innerHTML += this.createCardElementHTML(q, i, { revealCorrectAnswers: true });
+                });
+            },
+
+            shiftReadPage: function(dir) {
+                this.readModeState.currentPage += dir;
+                if(this.readModeState.currentPage < 1) this.readModeState.currentPage = 1;
+                this.renderReadContainerList();
+                window.scrollTo(0,0);
+            },
+
+            executeSearch: function() {
+                this.readModeState.searchQuery = document.getElementById('search-input').value;
+                this.readModeState.currentPage = 1;
+                this.renderReadContainerList();
+            },
+
+            /* MOCK INTERFACE CONTROLS */
+            startMockMode: function() {
+                let pool = this.getActiveDataset();
+                const targetConfig = document.getElementById('mock-target-select').value;
+                
+                if(targetConfig === 'WRONG') {
+                    pool = pool.filter(q => this.cachedWrongTracker[this.currentSubject + '_' + q.no]);
+                } else if(targetConfig === 'SKIPPED') {
+                    pool = pool.filter(q => !this.mockState.selections[q.no]); 
+                }
+
+                if(pool.length === 0) {
+                    alert("Initialization error: Targeted pool parameters empty.");
+                    return;
+                }
+
+                // র্যান্ডম সাফল শাফলিং লজিক
+                pool = [...pool].sort(() => Math.random() - 0.5);
+
+                // কোয়েশ্চেন সাইজ লিমিটেশন ক্যাচিং
+                const sizeCfg = document.getElementById('mock-size-select').value;
+                if(sizeCfg !== 'ALL') {
+                    pool = pool.slice(0, Math.min(parseInt(sizeCfg), pool.length));
+                }
+
+                // স্টেট ক্লিনআপ অ্যান্ড রিবিল্ড
+                this.mockState.activePool = pool;
+                this.mockState.currentIndex = 0;
+                this.mockState.selections = {};
+                this.mockState.skipped = {};
+
+                // টাইমার কনফিগারেশন সেটআপ
+                const timeMinutes = parseInt(document.getElementById('mock-timer-select').value) || 0;
+                if(this.mockState.timerInterval) clearInterval(this.mockState.timerInterval);
+                
+                if(timeMinutes > 0) {
+                    this.mockState.timeRemaining = timeMinutes * 60;
+                    this.runMockCountdown();
+                } else {
+                    document.getElementById('mock-timer-display').textContent = "∞ Unlimited";
+                }
+
+                this.renderActiveMockSlot();
+                this.switchView('mock-view');
+            },
+
+            runMockCountdown: function() {
+                const display = document.getElementById('mock-timer-display');
+                this.mockState.timerInterval = setInterval(() => {
+                    App.mockState.timeRemaining--;
+                    if(App.mockState.timeRemaining <= 0) {
+                        clearInterval(App.mockState.timerInterval);
+                        alert("Time boundary timeout reached! Submitting evaluation matrix sheets automatically.");
+                        App.submitMock();
+                        return;
+                    }
+                    let m = Math.floor(App.mockState.timeRemaining / 60);
+                    let s = App.mockState.timeRemaining % 60;
+                    display.textContent = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                }, 1000);
+            },
+
+            renderActiveMockSlot: function() {
+                const q = this.mockState.activePool[this.mockState.currentIndex];
+                const container = document.getElementById('mock-card-target');
+                
+                container.innerHTML = this.createCardElementHTML(q, this.mockState.currentIndex, {
+                    userSelectedOption: this.mockState.selections[this.mockState.currentIndex] || null,
+                    interactiveMode: true
+                });
+
+                // প্রোগ্রেস বার আপডেট করুন
+                const pct = Math.round(((this.mockState.currentIndex + 1) / this.mockState.activePool.length) * 100);
+                document.getElementById('mock-progress-bar').style.width = `${pct}%`;
+            },
+
+            registerMockResponse: function(idxPosition, optionKey) {
+                this.mockState.selections[idxPosition] = optionKey;
+                delete this.mockState.skipped[idxPosition];
+                this.renderActiveMockSlot();
+            },
+
+            navigateMock: function(dir) {
+                const newIdx = this.mockState.currentIndex + dir;
+                if(newIdx >= 0 && newIdx < this.mockState.activePool.length) {
+                    this.mockState.currentIndex = newIdx;
+                    this.renderActiveMockSlot();
+                }
+            },
+
+            skipMock: function() {
+                this.mockState.skipped[this.mockState.currentIndex] = true;
+                if(this.mockState.currentIndex < this.mockState.activePool.length - 1) {
+                    this.navigateMock(1);
+                } else {
+                    alert("Reached final question matrix segment block. Please review or submit your test.");
+                }
+            },
+
+            submitMock: function() {
+                if(this.mockState.timerInterval) clearInterval(this.mockState.timerInterval);
+                
+                let correctAnswersCount = 0;
+                let wrongAnswersCount = 0;
+                let skippedAnswersCount = 0;
+
+                const targetReview = document.getElementById('review-list-target');
+                targetReview.innerHTML = '';
+
+                this.mockState.activePool.forEach((q, i) => {
+                    const selection = this.mockState.selections[i] || null;
+                    const cacheKey = this.currentSubject + '_' + q.no;
+
+                    if(!selection) {
+                        skippedAnswersCount++;
+                    } else if(selection === q.correct) {
+                        correctAnswersCount++;
+                        delete this.cachedWrongTracker[cacheKey]; // সঠিক হলে রং লিস্ট থেকে রিমুভ হবে
+                    } else {
+                        wrongAnswersCount++;
+                        this.cachedWrongTracker[cacheKey] = true; // ভুল হলে ট্র্যাকার ক্যাশে সেভ হবে
+                    }
+
+                    // প্রতিটি রিভিউ কার্ড ফুল স্ক্রিন ভিউ মডেলে যুক্ত হবে
+                    targetReview.innerHTML += this.createCardElementHTML(q, i, {
+                        userSelectedOption: selection,
+                        revealCorrectAnswers: true,
+                        appendStatusBadge: true
+                    });
+                });
+
+                this.saveLocalStorageBuffers();
+
+                // স্কোরবোর্ড ম্যাট্রিক্স ডেটা পুশ
+                const finalPercent = Math.round((correctAnswersCount / this.mockState.activePool.length) * 100) || 0;
+                document.getElementById('result-percentage').textContent = `${finalPercent}% Score Secured`;
+                document.getElementById('res-correct').textContent = correctAnswersCount;
+                document.getElementById('res-wrong').textContent = wrongAnswersCount;
+                document.getElementById('res-skipped').textContent = skippedAnswersCount;
+                document.getElementById('res-summary-line').textContent = `Total Questions: ${this.mockState.activePool.length} | Operational Subject: ${this.currentSubject}`;
+
+                this.switchView('result-view');
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+</body>
+</html>
