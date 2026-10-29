@@ -395,6 +395,7 @@ const App = {
   mockState: { activePool:[], currentIndex:0, selections:{}, skipped:{}, timerInterval:null, timeRemaining:0 },
   cachedBookmarks: {},
   cachedWrongTracker: {},
+  cachedSkippedTracker: {},
   geminiSelectedPool: {},
 
   init: function() {
@@ -409,6 +410,7 @@ const App = {
     try {
       this.cachedBookmarks = JSON.parse(localStorage.getItem('WBP_BKMKS')) || JSON.parse(localStorage.getItem('RRB_BKMKS')) || {};
       this.cachedWrongTracker = JSON.parse(localStorage.getItem('WBP_WRONGS')) || JSON.parse(localStorage.getItem('RRB_WRONGS')) || {};
+      this.cachedSkippedTracker = JSON.parse(localStorage.getItem('WBP_SKIPPED')) || JSON.parse(localStorage.getItem('RRB_SKIPPED')) || {};
       this.geminiSelectedPool = JSON.parse(localStorage.getItem('WBP_GEMINI_SEL')) || JSON.parse(localStorage.getItem('RRB_GEMINI_SEL')) || {};
       const savedConfig = JSON.parse(localStorage.getItem('WBP_CONFIG')) || JSON.parse(localStorage.getItem('RRB_CONFIG'));
       if (savedConfig) {
@@ -422,6 +424,7 @@ const App = {
       console.error("Cache corrupted, resetting memory.", e);
       this.cachedBookmarks = {};
       this.cachedWrongTracker = {};
+      this.cachedSkippedTracker = {};
       this.geminiSelectedPool = {};
     }
   },
@@ -430,6 +433,7 @@ const App = {
     try {
       localStorage.setItem('WBP_BKMKS', JSON.stringify(this.cachedBookmarks));
       localStorage.setItem('WBP_WRONGS', JSON.stringify(this.cachedWrongTracker));
+      localStorage.setItem('WBP_SKIPPED', JSON.stringify(this.cachedSkippedTracker));
       localStorage.setItem('WBP_GEMINI_SEL', JSON.stringify(this.geminiSelectedPool));
       localStorage.setItem('WBP_CONFIG', JSON.stringify({
         from: this.configRange.from,
@@ -576,6 +580,16 @@ const App = {
     return pool.filter(q => q.no >= this.configRange.from && q.no <= this.configRange.to);
   },
 
+  escapeHTML: function(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, char => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char]));
+  },
+
   createCardElementHTML: function(q, indexPosition, config = {}) {
     const globalKey = this.currentSubject + '_' + q.no;
     const isBookmarked = this.cachedBookmarks[globalKey] ? 'active' : '';
@@ -585,10 +599,10 @@ const App = {
 
     let questionMarkup = '';
     const primaryText = q.bn || q.question || q.en || "প্রশ্ন পাওয়া যায়নি";
-    questionMarkup += `<div class="q-main-text">${primaryText}</div>`;
+    questionMarkup += `<div class="q-main-text">${this.escapeHTML(primaryText)}</div>`;
     
     if(q.bn && q.en) {
-      questionMarkup += `<div class="q-sub-text"><strong>English:</strong> ${q.en}</div>`;
+      questionMarkup += `<div class="q-sub-text"><strong>English:</strong> ${this.escapeHTML(q.en)}</div>`;
     }
 
     let optionsBlock = '';
@@ -602,7 +616,7 @@ const App = {
         let clickActionStr = config.interactiveMode ? `onclick="App.registerMockResponse(${indexPosition}, '${key}')"` : '';
         optionsBlock += `
           <div class="option-item ${evaluationClass}" ${clickActionStr}>
-            <span class="option-prefix">${key})</span> ${q.options[key]}
+            <span class="option-prefix">${key})</span> ${this.escapeHTML(q.options[key])}
           </div>`;
       }
     }
@@ -618,7 +632,7 @@ const App = {
     if(config.revealExplanation && q.explanation) {
       explanationHTML = `
         <div class="explanation-box">
-          <strong>💡 আসল কারণ/লজিক:</strong> ${q.explanation}
+          <strong>💡 আসল কারণ/লজিক:</strong> ${this.escapeHTML(q.explanation)}
         </div>`;
     }
 
@@ -635,7 +649,7 @@ const App = {
     return `
       <div class="card-wrapper ${isGeminiPicked ? 'gemini-card-picked' : ''}" id="card-wrap-${this.currentSubject}-${q.no}">
         <div class="card-strip-text">
-          <div class="card-strip-title">${this.getSubjectDisplayName(this.currentSubject)}</div>
+          <div class="card-strip-title">${this.escapeHTML(this.getSubjectDisplayName(this.currentSubject))}</div>
           <div class="card-strip-sub">WBP & KP Exam • Question ${q.no}</div>
         </div>
         <div class="question-card">
@@ -954,7 +968,7 @@ ${questionBlocksArray.join('\n\n')}
     const targetConfig = document.getElementById('mock-target-select').value;
 
     if(targetConfig === 'WRONG') pool = pool.filter(q => this.cachedWrongTracker[this.currentSubject + '_' + q.no]);
-    else if(targetConfig === 'SKIPPED') pool = pool.filter(q => !this.mockState.selections[q.no]);
+    else if(targetConfig === 'SKIPPED') pool = pool.filter(q => !!this.cachedSkippedTracker[this.currentSubject + '_' + q.no]);
 
     if(pool.length === 0) { alert("নির্বাচন অনুযায়ী কোনো প্রশ্ন পাওয়া যায়নি।"); return; }
 
@@ -1041,9 +1055,18 @@ ${questionBlocksArray.join('\n\n')}
     this.mockState.activePool.forEach((q, i) => {
       const selection = this.mockState.selections[i] || null;
       const cacheKey = this.currentSubject + '_' + q.no;
-      if(!selection) skippedAnswersCount++;
-      else if(selection === q.correct) { correctAnswersCount++; delete this.cachedWrongTracker[cacheKey]; }
-      else { wrongAnswersCount++; this.cachedWrongTracker[cacheKey] = true; }
+      if(!selection) {
+        skippedAnswersCount++;
+        this.cachedSkippedTracker[cacheKey] = true;
+      } else if(selection === q.correct) {
+        correctAnswersCount++;
+        delete this.cachedWrongTracker[cacheKey];
+        delete this.cachedSkippedTracker[cacheKey];
+      } else {
+        wrongAnswersCount++;
+        this.cachedWrongTracker[cacheKey] = true;
+        delete this.cachedSkippedTracker[cacheKey];
+      }
       
       targetReview.innerHTML += this.createCardElementHTML(q, i, { 
         userSelectedOption: selection, 
