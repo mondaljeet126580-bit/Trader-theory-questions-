@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RRB Group D, Railway & WBP Exam Hub</title>
+<title>WBP & KP Exam MCQ Hub & Mock Simulator</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', 'Hind Siliguri', Tahoma, Geneva, Verdana, sans-serif; }
-body { background-color:#081325; color:#ffffff; padding:20px 10px; display:flex; justify-content:center; min-height:100vh; }
+body { background-color:#081325; color:#ffffff; padding:20px 10px 85px 10px; display:flex; justify-content:center; min-height:100vh; }
 .app-container { width:100%; max-width:680px; margin:0 auto; }
 .hidden { display:none !important; }
 .glass-panel { background:rgba(15, 34, 66, 0.85); border:1px solid rgba(59, 130, 246, 0.2); border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 8px 32px 0 rgba(0,0,0,0.45); }
@@ -20,8 +20,8 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 .star-filter-nav { background:#b45309; border-color:#d97706; color:#ffffff; }
 .star-filter-nav:hover { background:#d97706; }
 
-/* Railway Exam Branding */
-.railway-badge { display:inline-flex; align-items:center; gap:6px; background:#1e3a8a; color:#93c5fd; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; margin-bottom:10px; border:1px solid #3b82f6; }
+/* WBP & KP Exam Branding */
+.exam-badge { display:inline-flex; align-items:center; gap:6px; background:#1e3a8a; color:#93c5fd; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600; margin-bottom:10px; border:1px solid #3b82f6; }
 .main-header { font-size:24px; font-weight:bold; margin-bottom:6px; line-height:1.3; background:linear-gradient(to right, #60a5fa, #38bdf8, #fbbf24); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 .sub-header { font-size:13px; color:#94a3b8; margin-bottom:20px; }
 
@@ -46,8 +46,9 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 .btn-secondary { background:#1e293b; color:#e2e8f0; padding:9px; font-size:13px; border-radius:8px; border:1px solid #334155; cursor:pointer; }
 .btn-secondary:hover { background:#334155; }
 
-/* Railway Exam Question Card */
-.card-wrapper { background:linear-gradient(90deg, #1e3a8a, #0284c7); border-radius:18px; padding-top:46px; position:relative; overflow:hidden; box-shadow:0 10px 25px -5px rgba(0,0,0,0.4); margin-bottom:20px; }
+/* Question Card */
+.card-wrapper { background:linear-gradient(90deg, #1e3a8a, #0284c7); border-radius:18px; padding-top:46px; position:relative; overflow:hidden; box-shadow:0 10px 25px -5px rgba(0,0,0,0.4); margin-bottom:20px; transition:box-shadow 0.2s ease; }
+.card-wrapper.gemini-card-picked { box-shadow:0 0 0 3px #a855f7, 0 10px 25px -5px rgba(168,85,247,0.45); }
 .card-strip-text { position:absolute; top:12px; left:18px; color:white; }
 .card-strip-title { font-size:15px; font-weight:bold; letter-spacing:0.5px; } 
 .card-strip-sub { font-size:11px; opacity:.9; margin-top:2px; }
@@ -69,6 +70,32 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 
 /* 1-Line Explanation Box */
 .explanation-box { margin-top:14px; background:#eff6ff; border-left:4px solid #2563eb; padding:12px 14px; border-radius:8px; font-size:13.5px; color:#1e3a8a; line-height:1.5; text-align:left; border-top:1px solid #dbeafe; border-right:1px solid #dbeafe; border-bottom:1px solid #dbeafe; }
+
+/* Ask Gemini Card Action Buttons & Bulk Features */
+.gemini-card-actions { display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px dashed #e2e8f0; }
+.btn-gemini-select { flex:1; padding:9px 10px; border-radius:8px; border:1.5px solid #cbd5e1; background:#f8fafc; color:#334155; font-size:12.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; transition:all 0.2s; }
+.btn-gemini-select:hover { border-color:#9333ea; color:#7e22ce; background:#faf5ff; }
+.btn-gemini-select.selected { background:#f3e8ff; border-color:#9333ea; color:#6b21a8; font-weight:700; }
+.btn-ask-gemini { flex:1.2; padding:9px 12px; border-radius:8px; border:none; background:linear-gradient(90deg, #4f46e5, #9333ea, #db2777); color:#ffffff; font-size:12.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; box-shadow:0 3px 10px rgba(147, 51, 234, 0.25); transition:transform 0.15s, opacity 0.15s; }
+.btn-ask-gemini:hover { opacity:0.93; }
+.btn-ask-gemini:active { transform:scale(0.97); }
+
+/* Quick Number Input Panel for Bulk Gemini */
+.gemini-bulk-input-box { background:rgba(79, 70, 229, 0.12); border:1px solid rgba(168, 85, 247, 0.35); border-radius:12px; padding:12px; margin-bottom:15px; }
+.gemini-bulk-title { font-size:12.5px; font-weight:600; color:#e9d5ff; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.gemini-bulk-row { display:flex; gap:8px; }
+.gemini-bulk-row input { margin-bottom:0; flex:1; font-size:13px; padding:8px 10px; }
+.btn-gemini-direct { background:linear-gradient(90deg, #6366f1, #a855f7); color:white; border:none; padding:8px 14px; border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; white-space:nowrap; }
+
+/* Floating Bulk Gemini Bar */
+.gemini-floating-bar { position:fixed; bottom:14px; left:50%; transform:translateX(-50%); width:94%; max-width:650px; background:linear-gradient(90deg, #1e1b4b, #3b0764); border:1.5px solid #a855f7; border-radius:14px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; z-index:9990; box-shadow:0 12px 30px rgba(0,0,0,0.75); }
+.gemini-float-info { font-size:13px; font-weight:600; color:#f3e8ff; }
+.gemini-float-btns { display:flex; gap:8px; align-items:center; }
+.btn-float-ask { background:linear-gradient(90deg, #ec4899, #8b5cf6); border:none; color:white; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 2px 8px rgba(236,72,153,0.4); }
+.btn-float-clear { background:#334155; border:1px solid #475569; color:#cbd5e1; padding:8px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; }
+
+/* Toast Notification */
+.gemini-toast { position:fixed; top:18px; left:50%; transform:translateX(-50%); background:#1e1b4b; border:1.5px solid #38bdf8; color:#ffffff; padding:12px 18px; border-radius:12px; font-size:13.5px; font-weight:600; z-index:10000; box-shadow:0 10px 25px rgba(0,0,0,0.7); text-align:center; max-width:92%; }
 
 /* Result Modal */
 .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:9999; backdrop-filter:blur(4px); }
@@ -94,6 +121,18 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 <body>
 <div class="app-container">
 
+  <!-- TOAST NOTIFICATION FOR GEMINI -->
+  <div id="gemini-toast" class="gemini-toast hidden"></div>
+
+  <!-- FLOATING BAR FOR BULK GEMINI QUESTIONS -->
+  <div id="gemini-floating-bar" class="gemini-floating-bar hidden">
+    <div class="gemini-float-info">✨ <span id="gemini-selected-count">0</span> টি প্রশ্ন Gemini-র জন্য সিলেক্টেড</div>
+    <div class="gemini-float-btns">
+      <button class="btn-float-ask" onclick="App.askGeminiBulk()">🚀 Ask Gemini (একসাথে)</button>
+      <button class="btn-float-clear" onclick="App.clearGeminiSelection()">✖ রিসেট</button>
+    </div>
+  </div>
+
   <!-- TOP MODE SWITCHING TABS -->
   <div class="top-nav-tabs">
     <button class="nav-tab-btn" id="nav-btn-study" onclick="App.startReadMode()">📖 স্টাডি মোড</button>
@@ -103,17 +142,27 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 
   <!-- DASHBOARD VIEW -->
   <div id="dashboard-view" class="view-section">
-    <div class="railway-badge">🚆 RRB Group D • Railway CBT • WBP Exam Portal</div>
-    <div class="main-header" id="dynamic-title">Railway Exam MCQ Hub & Mock Simulator</div>
-    <div class="sub-header">RRB Group D, NTPC, Technician এবং WBP পরীক্ষার প্রস্তুতি ও অনলাইন মক টেস্ট</div>
+    <div class="exam-badge">🚓 WBP & KP EXAM PORTAL • পশ্চিমবঙ্গ ও কলকাতা পুলিশ রিক্রুটমেন্ট হাব</div>
+    <div class="main-header" id="dynamic-title">WBP & KP Exam MCQ Hub & Mock Simulator</div>
+    <div class="sub-header">WBP Constable, Lady Constable, SI এবং KP পরীক্ষার প্রস্তুতি ও অনলাইন মক টেস্ট</div>
 
     <!-- SUBJECT SEARCH & DYNAMIC TABS -->
     <div class="glass-panel" style="padding-bottom:12px;">
       <div class="subject-filter-box">
         <label style="font-size:13px;font-weight:600;color:#94a3b8;">বিষয় বা সেকশন নির্বাচন করুন:</label>
-        <input type="text" id="subject-search-input" class="subject-search-input" placeholder="🔍 বিষয় সার্চ করুন (যেমন: বিজ্ঞান, গণিত)..." oninput="App.filterSubjects(this.value)">
+        <input type="text" id="subject-search-input" class="subject-search-input" placeholder="🔍 বিষয় সার্চ করুন (যেমন: জিকে, বিজ্ঞান, গণিত)..." oninput="App.filterSubjects(this.value)">
       </div>
       <div class="subject-tabs" id="subject-tabs-container"></div>
+    </div>
+
+    <!-- QUICK BULK GEMINI SELECTOR BY QUESTION NUMBERS -->
+    <div class="glass-panel">
+      <h4>✨ Ask Gemini — নম্বর দিয়ে একসাথে একাধিক প্রশ্ন বুঝুন</h4>
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:10px;">যে প্রশ্নগুলো মুখস্থ হচ্ছে না বা কনসেপ্ট বুঝতে চাইছেন সেগুলোর নম্বর কমা বা স্পেস দিয়ে লিখুন (যেমন: 2, 3, 8, 10, 20):</p>
+      <div class="gemini-bulk-row">
+        <input type="text" id="dash-gemini-numbers" class="input-field" placeholder="উদা: 1, 2, 5, 8, 12..." style="margin-bottom:0;">
+        <button class="btn-gemini-direct" onclick="App.askGeminiByNumbers('dash-gemini-numbers')">✨ Ask Gemini</button>
+      </div>
     </div>
 
     <!-- SCOPE RANGE SELECTOR -->
@@ -142,7 +191,7 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 
     <!-- MOCK CONFIGURATION -->
     <div class="glass-panel">
-      <h4>⚡ Railway CBT মক টেস্ট সেটিংস</h4>
+      <h4>⚡ WBP & KP মক টেস্ট সেটিংস</h4>
       <div class="grid-2" style="margin-top:10px;">
         <div><label style="font-size:11px;color:#94a3b8;">প্রশ্নের সংখ্যা</label>
           <select id="mock-size-select" class="input-field">
@@ -152,7 +201,7 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
         <div><label style="font-size:11px;color:#94a3b8;">কাউন্টডাউন টাইমার</label>
           <select id="mock-timer-select" class="input-field">
             <option value="10">10 মিনিট</option><option value="15">15 মিনিট</option><option value="30" selected>30 মিনিট</option>
-            <option value="60">60 মিনিট</option><option value="90">90 মিনিট (RRB CBT)</option><option value="0">আনলিমিটেড</option>
+            <option value="60">60 মিনিট (WBP/KP Exam)</option><option value="90">90 মিনিট</option><option value="0">আনলিমিটেড</option>
           </select></div>
         <div><label style="font-size:11px;color:#94a3b8;">টার্গেট ফিল্টার</label>
           <select id="mock-target-select" class="input-field">
@@ -181,6 +230,15 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
     <div class="back-home-container">
       <button class="btn-home" onclick="App.goHome()">← মূল ড্যাশবোর্ডে ফিরে যান</button>
       <input type="text" id="search-input" class="input-field" placeholder="প্রশ্ন নম্বর বা যেকোনো শব্দ লিখে সার্চ করুন..." oninput="App.executeSearch()">
+      
+      <!-- Quick Bulk Gemini Input inside Study Mode -->
+      <div class="gemini-bulk-input-box">
+        <div class="gemini-bulk-title">✨ একাধিক প্রশ্ন নম্বর লিখে সরাসরি Gemini-তে পাঠান (বা নিচের কার্ড থেকে টিক দিন):</div>
+        <div class="gemini-bulk-row">
+          <input type="text" id="study-gemini-numbers" class="input-field" placeholder="প্রশ্ন নম্বর লিখুন (যেমন: 2, 3, 8, 10, 20)...">
+          <button class="btn-gemini-direct" onclick="App.askGeminiByNumbers('study-gemini-numbers')">✨ Ask Gemini</button>
+        </div>
+      </div>
     </div>
     <div id="read-list-target"></div>
     <div class="pagination-controls" id="read-pagination-bar">
@@ -256,43 +314,43 @@ const questionsDatabase = {
     },
     {
       no: 2,
-      bn: "রেললাইনে ব্যবহৃত ইস্পাতে কোন ধাতুর মিশ্রণে ক্ষয় প্রতিরোধ ক্ষমতা বাড়ে?",
+      bn: "মানবদেহের রক্তচাপ মাপার যন্ত্রের নাম কী?",
       options: {
-        A: "ম্যাঙ্গানিজ",
-        B: "তামা",
-        C: "অ্যালুমিনিয়াম",
-        D: "দস্তা"
+        A: "স্ফিগমোম্যানোমিটার",
+        B: "ব্যারোমিটার",
+        C: "ল্যাকটোমিটার",
+        D: "অ্যামমিটার"
       },
       correct: "A",
-      explanation: "ম্যাঙ্গানিজ স্টিলের কাঠিন্য বৃদ্ধি করে এবং রেললাইনের ঘর্ষণজনিত ক্ষয় প্রতিরোধ করে।"
+      explanation: "স্ফিগমোম্যানোমিটার যন্ত্রের সাহায্যে মানবদেহের ধমনীর রক্তচাপ নির্ণয় করা হয়।"
     }
   ],
 
-  railway_gk: [
+  wbp_kp_gk: [
     {
       no: 1,
-      bn: "ভারতে সর্বপ্রথম কত সালে যাত্রীবাহী রেল পরিষেবা চালু হয়?",
-      en: "In which year was passenger train service first started in India?",
+      bn: "পশ্চিমবঙ্গের সর্বোচ্চ শৃঙ্গ কোনটি?",
+      en: "Which is the highest peak of West Bengal?",
       options: {
-        A: "1850",
-        B: "1853",
-        C: "1857",
-        D: "1905"
+        A: "টাইগার হিল",
+        B: "সান্দাকফু",
+        C: "ফালুট",
+        D: "গোরগাবুরু"
       },
       correct: "B",
-      explanation: "১৮৫৩ সালের ১৬ই এপ্রিল বোম্বে থেকে থানের মধ্যে প্রথম যাত্রীবাহী রেল চলেছিল।"
+      explanation: "সিঙ্গালিলা পর্বতশ্রেণির সান্দাকফু (৩,৬৩৬ মিটার) পশ্চিমবঙ্গের সর্বোচ্চ শৃঙ্গ।"
     },
     {
       no: 2,
-      bn: "ভারতের দীর্ঘতম রেল প্ল্যাটফর্মটি কোথায় অবস্থিত?",
+      bn: "ভারতের সংবিধানের কোন ধারায় 'অস্পৃশ্যতা দূরীকরণ'-এর কথা বলা হয়েছে?",
       options: {
-        A: "খড়গপুর জংশন",
-        B: "হাওড়া জংশন",
-        C: "শ্রী সিদ্ধারূঢ় স্বামীজী হুব্বাল্লী জংশন",
-        D: "গোরক্ষপুর জংশন"
+        A: "১৪ নং ধারা",
+        B: "১৬ নং ধারা",
+        C: "১৭ নং ধারা",
+        D: "১৯ নং ধারা"
       },
       correct: "C",
-      explanation: "কর্ণাটকের হুব্বাল্লী স্টেশনের ৮ নম্বর প্ল্যাটফর্মটি প্রায় ১,৫০৭ মিটার দীর্ঘ।"
+      explanation: "ভারতীয় সংবিধানের ১৭ নং ধারায় অস্পৃশ্যতা বিলুপ্ত এবং এর যেকোনো প্র্যাকটিস নিষিদ্ধ করা হয়েছে।"
     }
   ],
 
@@ -314,15 +372,15 @@ const questionsDatabase = {
   reasoning: [
     {
       no: 1,
-      bn: "যদি TRAIN-কে কোড ভাষায় WUDLQ লেখা হয়, তবে BUS-কে কী লেখা হবে?",
+      bn: "যদি POLICE-কে কোড ভাষায় SRROFH লেখা হয়, তবে CONSTABLE-এর প্রথম তিনটি অক্ষর কী হবে?",
       options: {
-        A: "EXV",
-        B: "EVX",
-        C: "DWU",
-        D: "EYV"
+        A: "FRQ",
+        B: "FQR",
+        C: "EPR",
+        D: "DMP"
       },
       correct: "A",
-      explanation: "প্রতিটি অক্ষরের অবস্থানের সাথে ক্রমান্বয়ে +৩ যোগ করা হয়েছে (B+3=E, U+3=X, S+3=V)।"
+      explanation: "প্রতিটি অক্ষরের অবস্থানের সাথে ক্রমান্বয়ে +৩ যোগ করা হয়েছে (C+3=F, O+3=R, N+3=Q)।"
     }
   ]
 };
@@ -337,19 +395,22 @@ const App = {
   mockState: { activePool:[], currentIndex:0, selections:{}, skipped:{}, timerInterval:null, timeRemaining:0 },
   cachedBookmarks: {},
   cachedWrongTracker: {},
+  geminiSelectedPool: {},
 
   init: function() {
     this.loadLocalStorageBuffers();
     this.renderSubjectTabs();
     this.syncMaxBounds();
+    this.updateGeminiFloatingBar();
     this.goHome();
   },
 
   loadLocalStorageBuffers: function() {
     try {
-      this.cachedBookmarks = JSON.parse(localStorage.getItem('RRB_BKMKS')) || {};
-      this.cachedWrongTracker = JSON.parse(localStorage.getItem('RRB_WRONGS')) || {};
-      const savedConfig = JSON.parse(localStorage.getItem('RRB_CONFIG'));
+      this.cachedBookmarks = JSON.parse(localStorage.getItem('WBP_BKMKS')) || JSON.parse(localStorage.getItem('RRB_BKMKS')) || {};
+      this.cachedWrongTracker = JSON.parse(localStorage.getItem('WBP_WRONGS')) || JSON.parse(localStorage.getItem('RRB_WRONGS')) || {};
+      this.geminiSelectedPool = JSON.parse(localStorage.getItem('WBP_GEMINI_SEL')) || JSON.parse(localStorage.getItem('RRB_GEMINI_SEL')) || {};
+      const savedConfig = JSON.parse(localStorage.getItem('WBP_CONFIG')) || JSON.parse(localStorage.getItem('RRB_CONFIG'));
       if (savedConfig) {
         this.configRange.from = savedConfig.from || 1;
         this.configRange.to = savedConfig.to || 100;
@@ -361,14 +422,16 @@ const App = {
       console.error("Cache corrupted, resetting memory.", e);
       this.cachedBookmarks = {};
       this.cachedWrongTracker = {};
+      this.geminiSelectedPool = {};
     }
   },
 
   saveLocalStorageBuffers: function() {
     try {
-      localStorage.setItem('RRB_BKMKS', JSON.stringify(this.cachedBookmarks));
-      localStorage.setItem('RRB_WRONGS', JSON.stringify(this.cachedWrongTracker));
-      localStorage.setItem('RRB_CONFIG', JSON.stringify({
+      localStorage.setItem('WBP_BKMKS', JSON.stringify(this.cachedBookmarks));
+      localStorage.setItem('WBP_WRONGS', JSON.stringify(this.cachedWrongTracker));
+      localStorage.setItem('WBP_GEMINI_SEL', JSON.stringify(this.geminiSelectedPool));
+      localStorage.setItem('WBP_CONFIG', JSON.stringify({
         from: this.configRange.from,
         to: this.configRange.to,
         currentSubject: this.currentSubject
@@ -381,12 +444,9 @@ const App = {
   getSubjectDisplayName: function(key) {
     const customNames = {
       general_science: "সাধারণ বিজ্ঞান (Science)",
-      railway_gk: "রেলওয়ে জিকে (GK & CA)",
+      wbp_kp_gk: "জিকে ও কারেন্ট অ্যাফেয়ার্স (GK & CA)",
       mathematics: "গণিত (Mathematics)",
-      reasoning: "রিজনিং (Reasoning)",
-      trade_theory: "ট্রেড থিওরি (Technical)",
-      es: "Employability Skills (ES)",
-      wcs: "Workshop Calc & Science"
+      reasoning: "রিজনিং ও জিআই (Reasoning)"
     };
     if(customNames[key]) return customNames[key];
     return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -444,7 +504,7 @@ const App = {
     if(element) element.classList.add('active');
     
     const displayName = this.getSubjectDisplayName(subKey);
-    document.getElementById('dynamic-title').textContent = `${displayName} — Railway Exam Hub`;
+    document.getElementById('dynamic-title').textContent = `${displayName} — WBP & KP Exam Hub`;
     this.syncMaxBounds();
   },
 
@@ -519,6 +579,7 @@ const App = {
   createCardElementHTML: function(q, indexPosition, config = {}) {
     const globalKey = this.currentSubject + '_' + q.no;
     const isBookmarked = this.cachedBookmarks[globalKey] ? 'active' : '';
+    const isGeminiPicked = !!this.geminiSelectedPool[globalKey];
     const userSelected = config.userSelectedOption || null;
     const revealCorrect = config.revealCorrectAnswers || false;
 
@@ -561,11 +622,21 @@ const App = {
         </div>`;
     }
 
+    const geminiActionsHTML = `
+      <div class="gemini-card-actions">
+        <button class="btn-gemini-select ${isGeminiPicked ? 'selected' : ''}" onclick="App.toggleGeminiSelect('${this.currentSubject}', ${q.no}, this, event)">
+          ${isGeminiPicked ? '✅ সিলেক্টেড (Bulk)' : '☑️ সিলেক্ট করুন (Bulk)'}
+        </button>
+        <button class="btn-ask-gemini" onclick="App.askGeminiSingle('${this.currentSubject}', ${q.no}, event)">
+          ✨ Ask Gemini
+        </button>
+      </div>`;
+
     return `
-      <div class="card-wrapper">
+      <div class="card-wrapper ${isGeminiPicked ? 'gemini-card-picked' : ''}" id="card-wrap-${this.currentSubject}-${q.no}">
         <div class="card-strip-text">
           <div class="card-strip-title">${this.getSubjectDisplayName(this.currentSubject)}</div>
-          <div class="card-strip-sub">RRB & WBP CBT • Question ${q.no}</div>
+          <div class="card-strip-sub">WBP & KP Exam • Question ${q.no}</div>
         </div>
         <div class="question-card">
           <button class="bookmark-star ${isBookmarked}" title="স্টার / বুকমার্ক করুন" onclick="App.toggleBookmarkDirect('${this.currentSubject}', ${q.no}, this, event)">★</button>
@@ -578,6 +649,7 @@ const App = {
           </div>
           <div class="options-container">${optionsBlock}</div>
           ${explanationHTML}
+          ${geminiActionsHTML}
         </div>
       </div>`;
   },
@@ -594,6 +666,236 @@ const App = {
     }
     this.saveLocalStorageBuffers();
   },
+
+  /* ================= ASK GEMINI (SINGLE & BULK) LOGIC ================= */
+  findQuestionObj: function(sub, num) {
+    const list = questionsDatabase[sub] || [];
+    return list.find(item => item.no === num);
+  },
+
+  formatQuestionForPrompt: function(q, idx) {
+    const qText = q.bn || q.question || q.en || "";
+    const enPart = (q.bn && q.en) ? `\n   [English: ${q.en}]` : "";
+    let optsText = "";
+    if(q.options) {
+      for(let k in q.options) {
+        optsText += `\n   (${k}) ${q.options[k]}`;
+      }
+    }
+    return `${idx}. [প্রশ্ন নং ${q.no}] ${qText}${enPart}${optsText}`;
+  },
+
+  buildStrongGeminiPrompt: function(questionBlocksArray) {
+    const isSingle = questionBlocksArray.length === 1;
+    const introLine = isSingle
+      ? `আমি এই বিষয়টি পড়েছি, কিন্তু মক টেস্ট প্র্যাকটিস করার সময় নিচের এই প্রশ্নটিতে আমার সমস্যা হচ্ছে। যেহেতু আমি শুধু থিওরি পড়ে বেশিদিন মনে রাখতে পারি না এবং MCQ প্র্যাকটিস করেই পুরো বিষয় মুখস্থ করি, তাই নিচের কঠোর নিয়মাবলী মেনে আমাকে উত্তর দাও:`
+      : `আমি এই বিষয়টি পড়েছি, কিন্তু মক টেস্ট প্র্যাকটিস করার সময় নিচের এই ${questionBlocksArray.length}টি প্রশ্নে আমার সমস্যা হচ্ছে। যেহেতু আমি শুধু থিওরি পড়ে বেশিদিন মনে রাখতে পারি না এবং MCQ প্র্যাকটিস করেই পুরো বিষয় মুখস্থ করি, তাই নিচের কঠোর নিয়মাবলী মেনে আমাকে উত্তর দাও:`;
+
+    return `${introLine}
+
+⚠️ **কঠোর নির্দেশ (Strict Boundary):** আমি নিচে ঠিক যে ${isSingle ? 'প্রশ্নটি দিয়েছি শুধুমাত্র সেই প্রশ্নটি' : 'কয়টি প্রশ্ন দিয়েছি শুধুমাত্র সেই প্রশ্নগুলো'} এবং তার সরাসরি সংশ্লিষ্ট টপিক ও অপশনগুলোর মধ্যেই সীমাবদ্ধ থাকবে। এর বাইরে অন্য কোনো অপ্রাসঙ্গিক বিষয় বা অহেতুক আলোচনায় একদমই যাবে না। শুধুমাত্র **WBP এবং KP (West Bengal Police & Kolkata Police)** পরীক্ষার জন্য যতটুকু গুরুত্বপূর্ণ, ঠিক ততটুকুই কভার করবে।
+
+---
+
+### **প্রথম ধাপ: আসল লজিক, পেছনের পুরো ঘটনা ও মনে রাখার ট্রিক**
+১. **সঠিক উত্তর ও আসল লজিক:** প্রদত্ত ${isSingle ? 'প্রশ্নটির' : 'প্রতিটি প্রশ্নের'} সঠিক উত্তর কোনটি এবং কেন সেটি সঠিক—তার ভেতরের আসল লজিক (Core Logic) কী? (বাকি ৩টি ভুল অপশন কেন ভুল বা সেগুলোর আসল পরিচয় কী, তাও সংক্ষেপে বলো)।
+২. **পেছনের পুরো ঘটনা ও কনসেপ্ট:** এই ${isSingle ? 'প্রশ্নটির' : 'প্রশ্নগুলোর'} পেছনের আসল ঘটনা, ইতিহাস বা মূল বৈজ্ঞানিক/তাত্ত্বিক কনসেপ্টটি গল্পের মতো করে সহজ ও স্পষ্ট বাংলায় বুঝিয়ে দাও।
+৩. **সহজে মনে রাখার কৌশল (Memory Trick):** পরীক্ষার হলে কনফিউশন এড়াতে এটি সহজে মনে রাখার একটি দারুণ শর্টকাট ট্রিক দাও।
+
+---
+
+### **দ্বিতীয় ধাপ: পুরো থিওরি ও ঘটনাকে ১০০% MCQ-তে রূপান্তর (মুখস্থ করার জন্য)**
+প্রথম ধাপে তুমি যে পুরো ঘটনা বা থিওরিটি শেখালে এবং নিচে যে ${isSingle ? 'প্রশ্নটি' : 'প্রশ্নগুলো'} দেওয়া হয়েছে, তার ওপর ভিত্তি করে **WBP / KP** পরীক্ষার উপযোগী **সমস্ত সম্ভাব্য MCQ** তৈরি করো।
+
+**বিশেষভাবে মনে রাখবে:** আমি প্রথম ধাপের থিওরিটা শুধুমাত্র একবার রিডিং পড়ব; পরীক্ষার জন্য প্রয়োজনীয় সমস্ত তথ্য ও বিষয় আমি সরাসরি এই MCQ এবং এর সঠিক উত্তর থেকেই মুখস্থ করব। তাই ব্যাখ্যার পেছনে কোনো লেখা নষ্ট না করে সেই জায়গায় আরও বেশি বেশি MCQ তৈরি করবে। থিওরিতে বলা একটি তথ্যও যেন বাদ না যায়—প্রতিটি তথ্যকে MCQ আকারে ভেঙে দেবে, যাতে MCQ পড়লেই থিওরি পড়ে মনে রাখার পুরো কাজটি ১০০% হয়ে যায়।
+
+**কঠোর নিয়মাবলী:**
+১. **অপ্রয়োজনীয় তথ্য বাদ:** স্কুল-কলেজের মতো অবান্তর তাত্ত্বিক বিবরণ পুরোপুরি বাদ দিয়ে শুধুমাত্র WBP এবং KP পরীক্ষায় আসার মতো কোর বিষয়ের ওপর ফোকাস করবে।
+২. **১০০% কভারেজ ও ৩৬০-ডিগ্রি অপশন বিশ্লেষণ (কোনো Limit নেই):**
+- ওপরে আলোচিত প্রতিটি গুরুত্বপূর্ণ তথ্য, সূত্র, সাল, একক এবং ব্যতিক্রম তো কভার করবেই; তার সাথে এই টপিকের যদি এমন কোনো সূক্ষ্ম তথ্য থাকে যা আলোচনায় স্কিপ হয়ে গেছে, সেগুলোও খুঁজে বের করে MCQ-তে যুক্ত করবে।
+- **বিশেষ নিয়ম:** কোনো একটি প্রশ্নের সঠিক উত্তর ছাড়াও বাকি যে ৩টি বিকল্প (ভুল অপশন) থাকবে, সেগুলোতে যদি পরীক্ষার উপযোগী কোনো গুরুত্বপূর্ণ তথ্য, নাম বা সাল থাকে—তবে সেই অপশনগুলোকে ভিত্তি করেও আলাদা নতুন MCQ তৈরি করতে হবে। কোনো গুরুত্বপূর্ণ তথ্য যেন অপশনের ভেতরেও অব্যবহৃত না থাকে।
+৩. **প্রশ্নের বিবিধ ধরন ও ভাষার পরিবর্তন (ডাবল হলেও দেবে):**
+- একই তথ্যকে বিভিন্ন দৃষ্টিকোণ ও ভিন্ন ভিন্ন ভাষা দিয়ে ঘুরিয়ে-ফিরিয়ে প্রশ্ন করবে।
+- যদি মনে হয় একই তথ্যের ওপর প্রশ্ন দুবার বা পুনরাবৃত্তি (ডাবল) হচ্ছে, তাতে কোনো অসুবিধা নেই—পরীক্ষক যতভাবে ভাষা বদলে ঘুরিয়ে দিতে পারেন, তার সব কটি রূপই প্রশ্ন আকারে দেবে।
+- প্রশ্নগুলো হবে—Direct, Concept-based, Statement-based, Matching (স্তম্ভ মেলানো), Chronology (সালের ক্রম), Odd one out (বেমানান বের করা), Trap/Confusing (বিভ্রান্তিকর অপশন), উল্টো শর্তের প্রশ্ন এবং "নিচের কোনটি সঠিক নয়"।
+৪. **১ লাইনের সংক্ষিপ্ত ব্যাখ্যা/লজিক সহ উত্তর:** কোনো MCQ-এর নিচেই বড় কোনো বিশদ ব্যাখ্যা বা প্যারাগ্রাফ দেওয়া চলবে না। প্রতিটি প্রশ্নের সঠিক উত্তরের ঠিক পাশে বা নিচে শুধুমাত্র ১ লাইনের একটি সংক্ষিপ্ত কারণ বা মাইক্রো-লজিক লিখে দেবে (যেমন: **উত্তর: B | কারণ/লজিক:** ...)।
+৫. **ব্যাচ ভিত্তিক আউটপুট:** লেখা যাতে মাঝপথে কেটে না যায়, তাই প্রথম ধাপের সংক্ষিপ্ত ঘটনাটি বলার পর একবারে ১৫–২০টি করে প্রশ্ন সাজিয়ে দেবে। পুরো সেট শেষ হলে নিচে লিখবে **"পরবর্তী প্রশ্নের জন্য Next লিখুন"**—আমি Next বললে তবেই পরবর্তী সেট দেবে, যতক্ষণ না এই বিষয়ের সমস্ত সম্ভাব্য প্রশ্ন শেষ হয়।
+৬. **বিষয়ের প্রকৃতি ও পড়ার গাইডলাইন:** এই পুরো টপিকের কোন কোন অংশগুলো সরাসরি MCQ পড়ে মুখস্থ করে নিলেই চলবে (ফ্যাক্ট, সাল, নাম ইত্যাদি), আর কোন নির্দিষ্ট অংশগুলো বা সূত্রের কার্যকারণ অন্তত একবার থিওরি থেকে ভালোভাবে বুঝে নেওয়া দরকার—সেটি প্রশ্ন দেওয়া শেষে আলাদা পয়েন্ট আকারে স্পষ্টভাবে জানিয়ে দেবে।
+
+---
+
+**আমার নির্বাচিত প্রশ্ন${isSingle ? 'টি' : 'গুলো'} নিচে দেওয়া হলো (শুধুমাত্র এর ওপরই ফোকাস করবে):**
+
+${questionBlocksArray.join('\n\n')}
+
+---
+
+**রি-চেক (উত্তর দেওয়ার সময় শেষে এটিও স্পষ্টভাবে যাচাই করে জানাবে):**
+একটা কথা বলো এই ${isSingle ? 'প্রশ্নটির' : 'প্রশ্নগুলোর'} ক্ষেত্রে তুমি সমস্ত কিছু যে প্রশ্নগুলো দিয়েছো সেগুলো সব ডব্লিউবিপি (WBP) এবং কেপির (KP) জন্য তো, বা অন্য এরকম কিছু দিয়ে দাওনি তো যেগুলো দরকার নেই ওই পরীক্ষার জন্য? আর যে থিওরিটা পড়িয়েছ সেই পুরো থিওরিটা কোশ্চেন (MCQ) আকারে আছে তো? আর একটা কথা বলো যে বাকি যে তিনটা ভুল অপশন আছে সেই তিনটা অপশন থেকেও যে সমস্ত ওই পরীক্ষা সম্বন্ধে কোশ্চেন হতে পারে সেগুলোও এমসিকিউ (MCQ) আকারে দিয়েছো তো?`;
+  },
+
+  copyTextSynchronously: function(text) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch(e) {}
+    if(navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
+  },
+
+  showGeminiToast: function(msg) {
+    const toast = document.getElementById('gemini-toast');
+    if(!toast) return;
+    toast.textContent = msg;
+    toast.classList.remove('hidden');
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 4000);
+  },
+
+  launchGeminiWithPrompt: function(promptText, count) {
+    this.copyTextSynchronously(promptText);
+    this.showGeminiToast(`✅ ${count}টি প্রশ্ন ও WBP/KP প্রম্পট কপি হয়ে গেছে! Gemini খুলছে, সেখানে শুধু Paste করুন।`);
+    const geminiURL = `https://gemini.google.com/app?q=${encodeURIComponent(promptText)}`;
+    window.open(geminiURL, '_blank');
+  },
+
+  askGeminiSingle: function(sub, num, event) {
+    if(event) event.stopPropagation();
+    const q = this.findQuestionObj(sub, num);
+    if(!q) return;
+
+    const formattedQ = this.formatQuestionForPrompt(q, 1);
+    const fullPrompt = this.buildStrongGeminiPrompt([formattedQ]);
+    this.launchGeminiWithPrompt(fullPrompt, 1);
+  },
+
+  toggleGeminiSelect: function(sub, num, btnEl, event) {
+    if(event) event.stopPropagation();
+    const key = sub + '_' + num;
+    const cardWrap = document.getElementById(`card-wrap-${sub}-${num}`);
+
+    if(this.geminiSelectedPool[key]) {
+      delete this.geminiSelectedPool[key];
+      if(btnEl) {
+        btnEl.classList.remove('selected');
+        btnEl.innerHTML = '☑️ সিলেক্ট করুন (Bulk)';
+      }
+      if(cardWrap) cardWrap.classList.remove('gemini-card-picked');
+    } else {
+      this.geminiSelectedPool[key] = { sub: sub, no: num };
+      if(btnEl) {
+        btnEl.classList.add('selected');
+        btnEl.innerHTML = '✅ সিলেক্টেড (Bulk)';
+      }
+      if(cardWrap) cardWrap.classList.add('gemini-card-picked');
+    }
+    this.saveLocalStorageBuffers();
+    this.updateGeminiFloatingBar();
+  },
+
+  updateGeminiFloatingBar: function() {
+    const bar = document.getElementById('gemini-floating-bar');
+    const countSpan = document.getElementById('gemini-selected-count');
+    if(!bar || !countSpan) return;
+
+    const totalSelected = Object.keys(this.geminiSelectedPool).length;
+    countSpan.textContent = totalSelected;
+
+    if(totalSelected > 0) {
+      bar.classList.remove('hidden');
+    } else {
+      bar.classList.add('hidden');
+    }
+  },
+
+  clearGeminiSelection: function() {
+    this.geminiSelectedPool = {};
+    this.saveLocalStorageBuffers();
+    this.updateGeminiFloatingBar();
+    document.querySelectorAll('.btn-gemini-select').forEach(btn => {
+      btn.classList.remove('selected');
+      btn.innerHTML = '☑️ সিলেক্ট করুন (Bulk)';
+    });
+    document.querySelectorAll('.card-wrapper.gemini-card-picked').forEach(card => {
+      card.classList.remove('gemini-card-picked');
+    });
+  },
+
+  askGeminiBulk: function() {
+    const keys = Object.keys(this.geminiSelectedPool);
+    if(keys.length === 0) {
+      alert("প্রথমে অন্তত ১টি প্রশ্ন সিলেক্ট করুন।");
+      return;
+    }
+
+    const questionBlocks = [];
+    keys.forEach((key) => {
+      const item = this.geminiSelectedPool[key];
+      const q = this.findQuestionObj(item.sub, item.no);
+      if(q) {
+        questionBlocks.push(this.formatQuestionForPrompt(q, questionBlocks.length + 1));
+      }
+    });
+
+    if(questionBlocks.length === 0) {
+      alert("নির্বাচিত প্রশ্নগুলো খুঁজে পাওয়া যায়নি।");
+      return;
+    }
+
+    const fullPrompt = this.buildStrongGeminiPrompt(questionBlocks);
+    this.launchGeminiWithPrompt(fullPrompt, questionBlocks.length);
+  },
+
+  askGeminiByNumbers: function(inputId) {
+    const inputEl = document.getElementById(inputId);
+    if(!inputEl || !inputEl.value.trim()) {
+      alert("দয়া করে প্রশ্নের নম্বর লিখুন (যেমন: 2, 3, 8, 10, 20)।");
+      return;
+    }
+
+    const bnToEnDigits = {'০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9'};
+    const normalizedStr = inputEl.value.replace(/[০-৯]/g, d => bnToEnDigits[d]);
+
+    const numbers = normalizedStr
+      .split(/[\s,]+/)
+      .map(n => parseInt(n.trim(), 10))
+      .filter(n => !isNaN(n));
+
+    if(numbers.length === 0) {
+      alert("সঠিক প্রশ্ন নম্বর লিখুন।");
+      return;
+    }
+
+    const uniqueNumbers = [...new Set(numbers)];
+    const currentPool = questionsDatabase[this.currentSubject] || [];
+    const matchedQuestions = [];
+
+    uniqueNumbers.forEach(num => {
+      const found = currentPool.find(q => q.no === num);
+      if(found) {
+        matchedQuestions.push(this.formatQuestionForPrompt(found, matchedQuestions.length + 1));
+      }
+    });
+
+    if(matchedQuestions.length === 0) {
+      alert(`বর্তমান বিষয়ে (${this.getSubjectDisplayName(this.currentSubject)}) এই নম্বরের কোনো প্রশ্ন পাওয়া যায়নি।`);
+      return;
+    }
+
+    const fullPrompt = this.buildStrongGeminiPrompt(matchedQuestions);
+    this.launchGeminiWithPrompt(fullPrompt, matchedQuestions.length);
+  },
+  /* ==================================================================== */
 
   startReadMode: function() {
     this.readModeState.currentPage = 1;
@@ -631,7 +933,7 @@ const App = {
     document.getElementById('read-page-indicator').textContent = `পাতা ${this.readModeState.currentPage} এর ${totalPages} (মোট প্রশ্ন: ${totalItems})`;
 
     const viewSlice = dataset.slice(startIdx, endIdx);
-    viewSlice.forEach((q, i) => { target.innerHTML += this.createCardElementHTML(q, i, { revealCorrectAnswers:true, revealExplanation:false }); });
+    viewSlice.forEach((q, i) => { target.innerHTML += this.createCardElementHTML(q, i, { revealCorrectAnswers:true, revealExplanation:true }); });
   },
 
   shiftReadPage: function(dir) {
@@ -656,7 +958,6 @@ const App = {
 
     if(pool.length === 0) { alert("নির্বাচন অনুযায়ী কোনো প্রশ্ন পাওয়া যায়নি।"); return; }
 
-    // প্রশ্নের ক্রম নির্ধারণ (সাধারণ ক্রম বা সাফাল ক্রম)
     const orderCfg = document.getElementById('mock-order-select') ? document.getElementById('mock-order-select').value : 'NORMAL';
     if(orderCfg === 'SHUFFLE') {
       pool = [...pool].sort(() => Math.random() - 0.5);
