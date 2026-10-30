@@ -240,7 +240,7 @@
         answers: answers
       });
 
-      if (status) status.textContent = sessionStorage.getItem(TOKEN_KEY)
+      if (status) status.textContent = currentAdminToken()
         ? "✓ তোমার Performance Supabase-এ private ভাবে সংরক্ষিত হয়েছে।"
         : "✓ তোমার Performance এই browser-এ সংরক্ষিত হয়েছে। Admin unlock করলে cloud history-ও ব্যবহার হবে।";
     } catch (error) {
@@ -335,7 +335,7 @@
 
       const target = $("performance-list");
       target.innerHTML = "";
-      const historyMode = sessionStorage.getItem(TOKEN_KEY)
+      const historyMode = currentAdminToken()
         ? "Supabase private history"
         : "এই browser-এর local history";
       const modeNote = document.createElement("div");
