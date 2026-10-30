@@ -8,17 +8,17 @@ This integration uses only the Supabase project named Trader-theory-questions- (
 
 The main app no longer displays a Supabase email/password login form. It opens in Guest mode and reads only published rows through the existing RLS policies.
 
-When the Admin Panel is unlocked in the same browser tab, a temporary Admin session token is held in sessionStorage. The main app can then request the published content plus the existing Admin owner's private subjects/questions. Closing the tab drops the token; the next Admin visit must unlock again.
+When the Admin Panel is unlocked in the same browser, a temporary Admin session token is held in localStorage. The main app can request published content plus the existing Admin owner's private subjects/questions across navigation, page reloads, and tabs. The token expires server-side after four hours and is removed/revoked by the Admin Lock action.
 
 ## Admin access and token flow
 
 1. The Admin Panel has one passcode field only. No account email or Supabase account password is requested.
 2. The browser calls public.unlock_study_admin(p_passcode).
 3. The database checks the passcode against the salted iterative hash held in the non-exposed app_private.study_admin_passcode table.
-4. On success, a high-entropy random token is created. Only its SHA-256 hash is stored in app_private.study_admin_sessions. The browser receives the raw token and stores it in tab-scoped sessionStorage.
+4. On success, a high-entropy random token is created. Only its SHA-256 hash is stored in app_private.study_admin_sessions. The browser receives the raw token and stores it in localStorage (the passcode itself is never stored).
 5. The token expires after four hours. Each Admin RPC validates the hash and expiry. The token is not stored in GitHub or included in source code.
 6. Five failed passcode attempts from the same observed source/IP + user-agent fingerprint cause a 15-minute lockout.
-7. The Admin UI's Lock action calls study_admin_lock_session(token) to revoke the server session, then removes the token from the current tab.
+7. The Admin UI's Lock action calls study_admin_lock_session(token) to revoke the server session, then removes the token from localStorage.
 
 The unlock function uses the single existing row in public.study_admins to identify the Admin owner. It returns no token unless exactly one Study Admin is configured.
 
