@@ -37,15 +37,22 @@ The token is sent with Admin-only RPC calls. Those functions validate the token 
 - Preview and validate questions before saving.
 - Add MCQs with 2–8 options, correct answer, and optional explanation.
 - Continue numbering from the subject's latest question.
-- Insert questions to the existing public.mcq_questions table in batches of 250.
+- Insert questions to the existing public.mcq_questions table in batches of 250, linked by a required subject_id foreign key.
 - Review only your own private Admin-uploaded questions in the "My Uploaded Questions" panel.
-- Delete one question or select multiple questions and permanently delete them from Supabase.
+- Delete one owned upload or select multiple owned uploads.
+- Permanently clear every MCQ from one selected Subject while keeping the Subject.
+- Permanently clear every MCQ across all Subjects while keeping Subject records.
+- Delete any selected Subject together with its MCQs, Chapters, and Theory Notes.
 
-New subjects and questions are saved as unpublished/private and assigned to the existing Study Admin owner. Another visitor cannot read them through normal public queries. Only a valid Admin session can fetch the private rows.
+New subjects and questions are saved as unpublished/private and assigned to the existing Study Admin owner. Each MCQ must carry a subject_id foreign key, and the subject slug is stored in the legacy subject text field. The UI groups each question by subject_id, so an MCQ cannot appear in another Subject. Another visitor cannot read private rows through normal public queries. Only a valid Admin session can fetch the private rows.
 
 The four original bundled public starter subjects are also seeded in Supabase: General Science, WBP/KP GK & Current Affairs, Mathematics, and Reasoning & General Intelligence. This keeps the original subject selector populated instead of showing only the first subject row.
 
 Deletion is owner-checked on the server: only rows with the current Admin owner_id, source_type = admin_upload, and is_published = false can be deleted. The related bookmarks, mock-test question links, and individual question_attempts are removed by the database foreign-key cascades. Previously saved study_practice_sessions answer snapshots remain as historical test records.
+
+## Database reset completed
+
+All 13 existing MCQ rows were deleted from public.mcq_questions across all six Subjects, as requested. The six Subject records remain. Related bookmarks, question_attempts, and mock_test_questions rows were removed by foreign-key cascades. Theory Notes and Performance session rows were preserved. The MCQ subject_id column is now required for all future inserts.
 
 ## My Past Performance
 
