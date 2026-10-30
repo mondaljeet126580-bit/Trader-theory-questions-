@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#081325">
+  <title>Admin Panel | WBP & KP MCQ Hub</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 20px 12px 60px;
+      background: #081325; color: #f8fafc;
+      font-family: "Segoe UI", "Hind Siliguri", Tahoma, sans-serif;
+    }
+    .wrap { width: 100%; max-width: 920px; margin: 0 auto; }
+    a { color: #7dd3fc; text-decoration: none; }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+    .brand { font-size:13px; color:#93c5fd; font-weight:700; letter-spacing:.05em; }
+    h1 { margin:5px 0 4px; font-size:25px; }
+    .muted { color:#94a3b8; font-size:13px; line-height:1.6; }
+    .panel { background:rgba(15,34,66,.92); border:1px solid rgba(59,130,246,.25); border-radius:16px; padding:18px; margin:14px 0; box-shadow:0 8px 30px rgba(0,0,0,.22); }
+    .notice { border-radius:12px; padding:13px 14px; line-height:1.65; font-size:13px; margin:14px 0; }
+    .notice.warn { background:rgba(146,64,14,.18); border:1px solid rgba(245,158,11,.48); color:#fde68a; }
+    .notice.info { background:rgba(30,64,175,.18); border:1px solid rgba(96,165,250,.35); color:#bfdbfe; }
+    h2 { margin:0 0 13px; font-size:17px; }
+    label { display:block; margin:10px 0 6px; color:#cbd5e1; font-size:13px; font-weight:600; }
+    input, select, textarea {
+      display:block; width:100%; padding:11px 12px; border-radius:9px;
+      border:1px solid #334155; background:#0b172b; color:#f8fafc;
+      font:inherit; font-size:14px; outline:none;
+    }
+    input:focus, select:focus, textarea:focus { border-color:#38bdf8; box-shadow:0 0 0 2px rgba(56,189,248,.12); }
+    textarea { min-height:300px; resize:vertical; line-height:1.55; tab-size:2; }
+    button, .linkbtn {
+      display:inline-flex; align-items:center; justify-content:center; gap:7px;
+      border:1px solid #334155; border-radius:9px; padding:10px 14px;
+      background:#1e293b; color:#f8fafc; font-weight:700; cursor:pointer;
+      font:inherit; font-size:13px; text-decoration:none;
+    }
+    button.primary { background:linear-gradient(90deg,#1d4ed8,#0284c7); border-color:#60a5fa; }
+    button.success { background:linear-gradient(90deg,#047857,#059669); border-color:#34d399; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .row { display:flex; align-items:end; gap:10px; }
+    .row > * { flex:1; }
+    .row .fit { flex:0 0 auto; }
+    .actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:12px; }
+    .stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:14px 0; }
+    .stat { background:#0b172b; border:1px solid #263750; border-radius:10px; padding:12px; }
+    .stat strong { display:block; font-size:23px; color:#7dd3fc; }
+    .stat span { font-size:11px; color:#94a3b8; }
+    .preview-list { display:grid; gap:9px; margin-top:12px; }
+    .preview-item { background:#0b172b; border:1px solid #263750; border-radius:10px; padding:12px; }
+    .preview-item strong { display:block; font-size:13px; line-height:1.55; }
+    .preview-item p { color:#94a3b8; font-size:12px; line-height:1.5; margin:7px 0 0; white-space:pre-wrap; }
+    .errors { color:#fecaca; font-size:12px; line-height:1.65; margin:8px 0 0; }
+    .good { color:#86efac; }
+    .hidden { display:none !important; }
+    .format { background:#050d1b; border:1px solid #263750; border-radius:10px; padding:12px; white-space:pre-wrap; overflow:auto; color:#cbd5e1; font:12px/1.6 ui-monospace,monospace; }
+    .small { font-size:11px; color:#94a3b8; line-height:1.6; }
+    @media(max-width:620px) {
+      .top, .row { align-items:stretch; flex-direction:column; }
+      .row .fit { width:100%; }
+      .stats { grid-template-columns:1fr 1fr; }
+      h1 { font-size:22px; }
+      .panel { padding:14px; }
+      textarea { min-height:260px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <div class="brand">WBP & KP EXAM HUB</div>
+        <h1>Admin Panel</h1>
+        <div class="muted">Subject তৈরি করুন এবং একসঙ্গে অনেক MCQ যোগ করুন</div>
+      </div>
+      <a class="linkbtn" href="index.html">← মূল অ্যাপে ফিরুন</a>
+    </header>
+
+    <div class="notice warn">
+      <strong>Local Preview — Supabase সংযোগ এখনও করা হয়নি।</strong><br>
+      এই ধাপে কোনো Supabase account, table বা data পড়া/লেখা হচ্ছে না। এখন এখানে যোগ করা বিষয় ও প্রশ্ন শুধু এই browser-এর IndexedDB-তে থাকবে; অন্য user-এর app-এ যাবে না। Supabase Auth দিয়ে Admin role যাচাই না হওয়া পর্যন্ত এটিকে secure/public Admin Panel মনে করবেন না। কোনো password বা Admin secret GitHub-এ রাখা হয়নি।
+    </div>
+
+    <section class="panel">
+      <h2>১. Subject নির্বাচন করুন</h2>
+      <label for="subject-select">যে বিষয়ে প্রশ্ন যোগ করবেন</label>
+      <select id="subject-select">
+        <option value="">Subject লোড হচ্ছে...</option>
+      </select>
+      <div id="subject-count" class="small">এই বিষয়ে কতগুলি প্রশ্ন আছে তা এখানে দেখাবে।</div>
+
+      <div style="border-top:1px solid #263750;margin:18px 0 14px"></div>
+      <h2>২. নতুন Subject তৈরি করুন</h2>
+      <div class="row">
+        <div>
+          <label for="new-subject-name">Subject-এর নাম</label>
+          <input id="new-subject-name" maxlength="100" placeholder="যেমন: ভারতীয় ইতিহাস / ITI Trade Theory">
+        </div>
+        <button id="add-subject-btn" class="primary fit" type="button">＋ Subject যোগ করুন</button>
+      </div>
+      <div id="subject-message" class="small" aria-live="polite"></div>
+    </section>
+
+    <section class="panel">
+      <h2>৩. একসঙ্গে অনেকগুলি প্রশ্ন Paste করুন</h2>
+      <p class="muted">একটি প্রশ্নের পরে পরের প্রশ্ন লিখুন। Q1 / প্রশ্ন ১ / 1. দিয়ে প্রশ্ন শুরু করতে পারেন। বিকল্প A–H পর্যন্ত দেওয়া যাবে। সঠিক উত্তর ও ব্যাখ্যা লিখুন। JSON array-ও গ্রহণ করা হবে।</p>
+
+      <div class="actions">
+        <button id="load-format-btn" type="button">নমুনা ফরম্যাট বসান</button>
+        <button id="load-json-btn" type="button">JSON নমুনা বসান</button>
+        <button id="clear-text-btn" type="button">লেখা মুছুন</button>
+      </div>
+
+      <label for="bulk-text">প্রশ্নের সম্পূর্ণ তালিকা</label>
+      <textarea id="bulk-text" spellcheck="false" placeholder="Q1: ভারতের রাজধানী কী?
+A) ঢাকা
+B) নয়াদিল্লি
+C) কলকাতা
+D) মুম্বাই
+Answer: B
+Explanation: নয়াদিল্লি ভারতের রাজধানী।
+
+Q2: ..."></textarea>
+
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label for="question-file">TXT / JSON ফাইল থেকেও Import করতে পারেন</label>
+          <input id="question-file" type="file" accept=".txt,.json,application/json,text/plain">
+        </div>
+        <button id="preview-btn" class="primary fit" type="button">প্রশ্ন যাচাই ও Preview</button>
+      </div>
+      <p class="small">প্রশ্নের সংখ্যার জন্য অ্যাপে আলাদা কোনো নির্দিষ্ট cap রাখা হয়নি। তবে Supabase সংযোগের আগে browser-এর IndexedDB quota ও device-এর storage সীমা প্রযোজ্য হবে। বড় তালিকা batch আকারে সংরক্ষণ করা হবে।</p>
+    </section>
+
+    <section id="preview-panel" class="panel hidden">
+      <h2>৪. Import-এর আগে যাচাই</h2>
+      <div class="stats">
+        <div class="stat"><strong id="valid-count">0</strong><span>সঠিক প্রশ্ন</span></div>
+        <div class="stat"><strong id="error-count">0</strong><span>সমস্যাযুক্ত ব্লক</span></div>
+        <div class="stat"><strong id="option-count">0</strong><span>মোট option</span></div>
+      </div>
+      <div id="parse-errors" class="errors"></div>
+      <div id="preview-list" class="preview-list"></div>
+      <div class="actions">
+        <button id="save-btn" class="success" type="button" disabled>✓ নির্বাচিত Subject-এ প্রশ্ন সংরক্ষণ করুন</button>
+      </div>
+      <p class="small">শুধু validation পাস করা প্রশ্নগুলি সংরক্ষণ হবে। সংরক্ষণের পর প্রতিটি প্রশ্নের নম্বর ওই Subject-এর শেষ নম্বরের পর থেকে স্বয়ংক্রিয়ভাবে বসবে।</p>
+    </section>
+
+    <section class="panel">
+      <h2>Paste করার নমুনা</h2>
+      <div class="format">Q1: ভারতের রাজধানী কী?
+English: What is the capital of India?
+A) মুম্বাই
+B) নয়াদিল্লি
+C) কলকাতা
+D) চেন্নাই
+Answer: B
+Explanation: নয়াদিল্লি ভারতের রাজধানী।
+
+---
+
+Q2: ২ + ২ = কত?
+A) ২
+B) ৩
+C) ৪
+D) ৫
+উত্তর: C
+ব্যাখ্যা: ২-এর সঙ্গে ২ যোগ করলে ৪ হয়।</div>
+      <p class="small">JSON উদাহরণ: [{"bn":"প্রশ্ন লিখুন","options":{"A":"অপশন ১","B":"অপশন ২"},"correct":"A","explanation":"কারণ"}]</p>
+    </section>
+  </main>
+
+  <script src="question-store.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
