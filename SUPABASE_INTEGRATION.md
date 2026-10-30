@@ -33,6 +33,10 @@ Admin RPCs are exposed to the Supabase Data API so they can be called from the s
 - study_admin_save_performance(token, session): saves a private performance session under the configured Admin owner.
 - study_admin_list_performance(token): reads that owner's performance sessions and legacy question-attempt records.
 - study_admin_lock_session(token): revokes the active token when the Admin locks the panel.
+- study_admin_list_my_questions(token, subject_slug): returns only the configured Admin owner's private, unpublished rows with source_type = admin_upload.
+- study_admin_delete_questions(token, question_ids): validates every requested ID belongs to that Admin and is still an unpublished admin_upload row, then permanently deletes the selected rows.
+
+The delete function rejects the entire request if any selected ID is not owned by the current Admin or is already published. Each request is limited to 500 question IDs. Existing foreign keys cascade the question deletion to bookmarks, mock_test_questions, and question_attempts. Saved study_practice_sessions answer snapshots remain intact as past-test history.
 
 The session helper is located in app_private, not an exposed schema. Direct access to the app_private tables is revoked from anon/authenticated roles. The old Auth-based passcode verification RPC was revoked because the new Admin flow does not use it.
 
