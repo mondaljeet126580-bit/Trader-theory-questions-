@@ -13,8 +13,8 @@ A Bengali-first static MCQ study and mock-test application connected to the exis
 The main app does not require Supabase email/password sign-in.
 
 - Visitors see subjects and questions marked as published.
-- If the Admin Panel is unlocked in the same browser tab, the main app can also load the Admin's private uploads using the temporary Admin session token.
-- That token lives only in sessionStorage for the current tab and expires after four hours.
+- If the Admin Panel is unlocked in the same browser, the main app can also load the Admin's private uploads using the temporary Admin session token, including after navigation, reload, or opening another tab.
+- That token is kept in browser localStorage (not the passcode), is validated by the server, and expires after four hours. The Admin Lock action revokes it and clears it from localStorage.
 - Closing the tab clears the browser-held token. The Admin must unlock again to view private content.
 - No passcode is embedded in HTML or JavaScript.
 
@@ -26,7 +26,7 @@ The Admin Panel requires only the additional Admin passcode. It does not ask for
 
 The passcode is verified by public.unlock_study_admin(text). That database function checks the stored salted iterative hash and creates a high-entropy, short-lived token. The raw passcode is not included in this repository. Failed attempts are rate-limited by source/IP and user agent; five failures cause a 15-minute lockout.
 
-The token is sent with Admin-only RPC calls. Those functions validate the token and expiry before reading or changing private data. The session is kept in tab-scoped sessionStorage, not localStorage. The Admin Lock action also revokes the server-side token.
+The token is sent with Admin-only RPC calls. Those functions validate the token and expiry before reading or changing private data. The temporary session token is kept in localStorage so Main App and Admin Panel can share it in the same browser. It is not the passcode, expires server-side after four hours, and is revoked by the Admin Lock action.
 
 ## Admin Panel features
 
