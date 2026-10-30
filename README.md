@@ -26,7 +26,7 @@ The Admin Panel requires only the additional Admin passcode. It does not ask for
 
 The passcode is verified by public.unlock_study_admin(text). That database function checks the stored salted iterative hash and creates a high-entropy, short-lived token. The raw passcode is not included in this repository. Failed attempts are rate-limited by source/IP and user agent; five failures cause a 15-minute lockout.
 
-The token is sent with Admin-only RPC calls. Those functions validate the token and expiry before reading or changing private data. The session is kept in tab-scoped sessionStorage, not localStorage.
+The token is sent with Admin-only RPC calls. Those functions validate the token and expiry before reading or changing private data. The session is kept in tab-scoped sessionStorage, not localStorage. The Admin Lock action also revokes the server-side token.
 
 ## Admin Panel features
 
@@ -71,6 +71,7 @@ New Admin-only database RPCs:
 - study_admin_count_questions
 - study_admin_save_performance
 - study_admin_list_performance
+- study_admin_lock_session
 
 Admin-only session records and passcode hash are stored in the non-exposed app_private schema. The RPC functions use an empty search path, validate the session token, and check its expiry. The short-lived token is a bearer credential: do not copy it to another person or paste it into chat.
 
