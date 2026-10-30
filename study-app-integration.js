@@ -9,51 +9,153 @@
   App.mockStartedAt = null;
   App.performanceSaving = false;
 
-  App.init = async function () {
+  function currentAdminToken() {
+    try { return sessionStorage.getItem(TOKEN_KEY) || ""; }
+    catch (_) { return ""; }
+  }
+
+  App.lastLoadedAdminToken = null;
+  App.questionRefreshInProgress = false;
+
+  App.refreshQuestionData = async function (options) {
+    const settings = options || {};
+    if (this.questionRefreshInProgress) return;
+    this.questionRefreshInProgress = true;
+
+    const previousSubject = this.currentSubject;
+    const previousCount = (questionsDatabase[previousSubject] || []).length;
+    const previousRangeTo = Number(this.configRange.to) || previousCount;
+    const wasFullRange = previousRangeTo >= previousCount || previousRangeTo === 100;
+    const status = $("app-data-status");
+
+    if (status && !settings.initial) {
+      status.textContent = "Admin session অনুযায়ী প্রশ্ন ও Subject আবার লোড হচ্ছে...";
+    }
+
     try {
       const data = await window.WBPQuestionStore.load();
-      Object.keys(questionsDatabase).forEach(key => delete questionsDatabase[key]);
+      const freshDatabase = {};
+      const freshNames = {};
+      const freshIds = {};
 
-      this.subjectNames = {};
-      this.subjectIds = {};
       data.subjects.forEach(subject => {
-        questionsDatabase[subject.key] = data.questions[subject.key] || [];
-        this.subjectNames[subject.key] = subject.name;
-        this.subjectIds[subject.key] = subject.id;
+        freshDatabase[subject.key] = data.questions[subject.key] || [];
+        freshNames[subject.key] = subject.name;
+        freshIds[subject.key] = subject.id;
       });
 
-      const keys = Object.keys(questionsDatabase);
-      if (!keys.includes(this.currentSubject)) this.currentSubject = keys[0] || "";
-      this.configRange.from = 1;
-      this.configRange.to = (questionsDatabase[this.currentSubject] || []).length || 1;
-      this.configRange.specialFilter = null;
+      Object.keys(questionsDatabase).forEach(key => delete questionsDatabase[key]);
+      Object.keys(freshDatabase).forEach(key => {
+        questionsDatabase[key] = freshDatabase[key];
+      });
 
-      this.loadLocalStorageBuffers();
-      if (!keys.includes(this.currentSubject)) this.currentSubject = keys[0] || "";
-      this.renderSubjectTabs();
+      this.subjectNames = freshNames;
+      this.subjectIds = freshIds;
+
+      const keys = Object.keys(questionsDatabase);
+      this.currentSubject = keys.includes(previousSubject)
+        ? previousSubject
+        : (keys[0] || "");
+
+      const currentCount = (questionsDatabase[this.currentSubject] || []).length;
+      if (settings.initial) {
+        this.configRange.from = 1;
+        this.configRange.to = currentCount || 1;
+        this.configRange.specialFilter = null;
+      } else {
+        this.configRange.from = Math.max(1, Math.min(
+          Number(this.configRange.from) || 1,
+          currentCount || 1
+        ));
+        this.configRange.to = wasFullRange
+          ? (currentCount || 1)
+          : Math.max(this.configRange.from, Math.min(previousRangeTo, currentCount || 1));
+      }
+
+      const searchInput = $("subject-search-input");
+      this.renderSubjectTabs(searchInput ? searchInput.value : "");
       this.syncMaxBounds();
       this.updateGeminiFloatingBar();
-      this.goHome();
 
-      const unlocked = !!sessionStorage.getItem(TOKEN_KEY);
-      const count = keys.reduce((sum, key) => sum + (questionsDatabase[key] || []).length, 0);
-      const countNode = $("telemetry-total-count");
-      if (countNode) countNode.textContent = count.toLocaleString("en-IN");
-
-      const status = $("app-data-status");
-      if (status) status.textContent = unlocked
-        ? "Admin unlock active — তোমার private ও published প্রশ্ন লোড হয়েছে।"
-        : "Guest mode — published প্রশ্ন দেখা যাচ্ছে। তোমার private প্রশ্ন দেখতে Admin Panel unlock করো।";
-
-      if (!keys.length) {
-        const node = $("subject-tabs-container");
-        if (node) node.textContent = "এখনও কোনো published Subject নেই।";
+      const title = $("dynamic-title");
+      if (title && this.currentSubject) {
+        title.textContent = this.getSubjectDisplayName(this.currentSubject) + " — WBP & KP Exam Hub";
       }
+
+      const total = keys.reduce((sum, key) => sum + (questionsDatabase[key] || []).length, 0);
+      const countNode = $("telemetry-total-count");
+      if (countNode) countNode.textContent = total.toLocaleString("en-IN");
+
+      const hasAdminAccess = !!currentAdminToken();
+      this.lastLoadedAdminToken = currentAdminToken();
+
+      if (status) {
+        status.textContent = hasAdminAccess
+          ? "Admin unlock active — তোমার private ও published প্রশ্ন লোড হয়েছে।"
+          : "Guest mode — published প্রশ্ন দেখা যাচ্ছে। তোমার private প্রশ্ন দেখতে Admin Panel unlock করো।";
+      }
+
+      // If the user returns to Study Mode after visiting the Admin Panel,
+      // redraw the current question list from the refreshed database.
+      const readView = $("read-view");
+      if (!settings.initial && readView && !readView.classList.contains("hidden")) {
+        this.renderReadContainerList();
+      }
+
+      if (!keys.length && status) {
+        status.textContent = "এখনও কোনো published Subject নেই। Admin Panel থেকে private Subject যোগ করে unlock করুন।";
+      }
+
+      return data;
     } catch (error) {
-      console.error("Question data could not be loaded.", error);
-      alert("Supabase থেকে প্রশ্ন লোড করা যায়নি: " + (error.message || String(error)));
+      console.error("Question data could not be refreshed.", error);
+      if (status) {
+        status.textContent = "Supabase থেকে প্রশ্ন লোড হয়নি: " + (error.message || String(error));
+      }
+      throw error;
+    } finally {
+      this.questionRefreshInProgress = false;
     }
   };
+
+  App.init = async function () {
+    this.loadLocalStorageBuffers();
+    try {
+      await this.refreshQuestionData({ initial: true });
+      this.goHome();
+    } catch (error) {
+      console.error("Initial question load failed.", error);
+    }
+  };
+
+  // Returning from admin.html can restore this page from the browser's
+  // back-forward cache. In that case DOMContentLoaded does not run again.
+  // Refresh the question bank on BFCache restore and whenever the Admin
+  // token changes while this page becomes active.
+  async function refreshAfterAdminReturn(force) {
+    const token = currentAdminToken();
+    if (!force && token === App.lastLoadedAdminToken) return;
+    try {
+      await App.refreshQuestionData({ preserveView: true });
+    } catch (error) {
+      console.error("Could not refresh after returning from Admin Panel.", error);
+    }
+  }
+
+  window.addEventListener("pageshow", function (event) {
+    if (event.persisted) refreshAfterAdminReturn(true);
+    else refreshAfterAdminReturn(false);
+  });
+
+  window.addEventListener("focus", function () {
+    refreshAfterAdminReturn(false);
+  });
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") {
+      refreshAfterAdminReturn(false);
+    }
+  });
 
   const originalStartMockMode = App.startMockMode;
   App.startMockMode = function () {
