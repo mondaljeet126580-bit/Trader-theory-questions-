@@ -40,6 +40,15 @@
   }
 
   function matchSubject(question, subjects) {
+    // The numeric subject_id is the authoritative relationship.
+    if (question.subject_id !== null && question.subject_id !== undefined) {
+      const byId = subjects.find(function (subject) {
+        return Number(subject.id) === Number(question.subject_id);
+      });
+      if (byId) return byId;
+    }
+
+    // Legacy fallback for older rows that have no subject_id.
     const raw = String(question.subject || "").trim().toLowerCase();
     return subjects.find(function (subject) {
       return [subject.slug, subject.name_bn, subject.name_en]
@@ -61,6 +70,7 @@
 
       grouped[subject.slug].push({
         id: row.id,
+        subjectId: row.subject_id || null,
         no: row.no,
         bn: row.bn,
         en: row.en || "",
@@ -122,7 +132,7 @@
 
     const [subjects, questions] = await Promise.all([
       fetchAll("subjects", "id,slug,name_bn,name_en,description,is_published,owner_id,sort_order", "id", true),
-      fetchAll("mcq_questions", "id,subject,no,bn,en,options,correct,explanation,chapter_id,difficulty,topic,source_type,is_published,owner_id,created_at", "id", true)
+      fetchAll("mcq_questions", "id,subject_id,subject,no,bn,en,options,correct,explanation,chapter_id,difficulty,topic,source_type,is_published,owner_id,created_at", "id", true)
     ]);
 
     return normalizeRows({ subjects: subjects, questions: questions });
@@ -280,6 +290,41 @@
     return { deletedCount: deletedCount };
   }
 
+  async function clearAllQuestions() {
+    const token = adminToken();
+    if (!token) throw new Error("Admin Panel আগে unlock করুন।");
+    const result = await client().rpc("study_admin_clear_all_questions", {
+      p_token: token,
+      p_confirmation: "DELETE ALL QUESTIONS"
+    });
+    if (result.error) throw result.error;
+    return result.data || { deletedCount: 0 };
+  }
+
+  async function clearSubjectQuestions(subjectSlug) {
+    const token = adminToken();
+    if (!token) throw new Error("Admin Panel আগে unlock করুন।");
+    const result = await client().rpc("study_admin_clear_subject_questions", {
+      p_token: token,
+      p_subject_slug: subjectSlug,
+      p_confirmation: subjectSlug
+    });
+    if (result.error) throw result.error;
+    return result.data || { deletedCount: 0 };
+  }
+
+  async function deleteSubject(subjectSlug) {
+    const token = adminToken();
+    if (!token) throw new Error("Admin Panel আগে unlock করুন।");
+    const result = await client().rpc("study_admin_delete_subject", {
+      p_token: token,
+      p_subject_slug: subjectSlug,
+      p_confirmation: subjectSlug
+    });
+    if (result.error) throw result.error;
+    return result.data || { deletedQuestions: 0, deletedSubject: subjectSlug };
+  }
+
   async function listPerformance() {
     const token = adminToken();
     if (token) {
@@ -304,6 +349,9 @@
     countQuestions: countQuestions,
     listMyQuestions: listMyQuestions,
     deleteQuestions: deleteQuestions,
+    clearAllQuestions: clearAllQuestions,
+    clearSubjectQuestions: clearSubjectQuestions,
+    deleteSubject: deleteSubject,
     savePerformance: savePerformance,
     listPerformance: listPerformance
   };
