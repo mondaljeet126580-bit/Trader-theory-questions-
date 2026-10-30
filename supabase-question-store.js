@@ -65,7 +65,10 @@
         explanation: row.explanation || "",
         difficulty: row.difficulty || "medium",
         topic: row.topic || "",
-        isPublished: !!row.is_published
+        isPublished: !!row.is_published,
+        ownerId: row.owner_id || null,
+        sourceType: row.source_type || "",
+        createdAt: row.created_at || null
       });
     });
 
@@ -221,6 +224,33 @@
     return session;
   }
 
+  async function listMyQuestions(subjectKey) {
+    const token = adminToken();
+    if (!token) throw new Error("প্রথমে Admin Panel unlock করুন।");
+
+    const result = await client().rpc("study_admin_list_my_questions", {
+      p_token: token,
+      p_subject_slug: subjectKey || null
+    });
+    if (result.error) throw result.error;
+    return Array.isArray(result.data) ? result.data : [];
+  }
+
+  async function deleteQuestions(questionIds) {
+    const token = adminToken();
+    if (!token) throw new Error("প্রথমে Admin Panel unlock করুন।");
+    if (!Array.isArray(questionIds) || !questionIds.length) {
+      throw new Error("Delete করার জন্য প্রশ্ন নির্বাচন করুন।");
+    }
+
+    const result = await client().rpc("study_admin_delete_questions", {
+      p_token: token,
+      p_question_ids: questionIds.map(Number)
+    });
+    if (result.error) throw result.error;
+    return result.data || { deletedCount: 0 };
+  }
+
   async function listPerformance() {
     const token = adminToken();
     if (token) {
@@ -243,6 +273,8 @@
     bulkAddQuestions: bulkAddQuestions,
     listSubjects: listSubjects,
     countQuestions: countQuestions,
+    listMyQuestions: listMyQuestions,
+    deleteQuestions: deleteQuestions,
     savePerformance: savePerformance,
     listPerformance: listPerformance
   };
