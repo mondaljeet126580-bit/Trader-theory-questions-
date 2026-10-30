@@ -5,6 +5,8 @@
   let lastValidQuestions = [];
   let lastErrors = [];
   let eventsInstalled = false;
+  let uploadedQuestions = [];
+  let selectedQuestionIds = new Set();
 
   function escapeHTML(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (char) {
@@ -232,6 +234,7 @@
     }
 
     await refreshSubjectCount();
+    await refreshMyQuestions();
     return subjects;
   }
 
@@ -243,6 +246,140 @@
     }
     const count = await WBPQuestionStore.countQuestions(key);
     $("subject-count").textContent = "এই Subject-এ বর্তমানে " + count + "টি প্রশ্ন সংরক্ষিত আছে।";
+  }
+
+  function updateDeleteControls() {
+    const count = selectedQuestionIds.size;
+    const button = $("delete-selected-questions-btn");
+    button.disabled = count === 0;
+    button.textContent = "🗑️ Selected Delete (" + count + ")";
+    $("select-all-my-questions").checked =
+      uploadedQuestions.length > 0 && count === uploadedQuestions.length;
+  }
+
+  function renderMyQuestions() {
+    const target = $("my-questions-list");
+    target.innerHTML = "";
+    const summary = $("my-questions-summary");
+    selectedQuestionIds.clear();
+
+    if (!uploadedQuestions.length) {
+      summary.textContent = "এই Subject-এ তোমার নিজের upload করা কোনো private প্রশ্ন নেই।";
+      target.textContent = "তুমি নতুন প্রশ্ন Save করলে সেগুলি এখানে দেখা যাবে।";
+      updateDeleteControls();
+      return;
+    }
+
+    summary.textContent = "এই Subject-এ তোমার " +
+      uploadedQuestions.length.toLocaleString("en-IN") +
+      "টি private uploaded question আছে। এখানে থেকে একটি করে অথবা একাধিক নির্বাচন করে Delete করতে পারবে।";
+
+    uploadedQuestions.forEach(function (question) {
+      const card = document.createElement("article");
+      card.className = "my-question-card";
+
+      const head = document.createElement("div");
+      head.className = "my-question-head";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "delete-question-check";
+      checkbox.setAttribute("aria-label", "প্রশ্ন " + question.no + " নির্বাচন করুন");
+      checkbox.addEventListener("change", function () {
+        const id = String(question.id);
+        if (checkbox.checked) selectedQuestionIds.add(id);
+        else selectedQuestionIds.delete(id);
+        updateDeleteControls();
+      });
+
+      const content = document.createElement("div");
+      content.className = "my-question-text";
+      content.textContent = "Q" + question.no + ". " + question.bn;
+
+      const meta = document.createElement("div");
+      meta.className = "my-question-meta";
+      meta.textContent = "Database ID: " + question.id +
+        (question.created_at ? " • Added: " + new Date(question.created_at).toLocaleDateString("bn-IN") : "");
+
+      const textWrap = document.createElement("div");
+      textWrap.style.flex = "1";
+      textWrap.appendChild(content);
+      textWrap.appendChild(meta);
+
+      head.appendChild(checkbox);
+      head.appendChild(textWrap);
+      card.appendChild(head);
+
+      const options = document.createElement("div");
+      options.className = "my-question-options";
+      options.textContent = Object.keys(question.options || {}).map(function (key) {
+        return key + ") " + question.options[key];
+      }).join("   •   ") + "\nসঠিক উত্তর: " + (question.correct || "—") +
+        (question.explanation ? "\nব্যাখ্যা: " + question.explanation : "");
+      card.appendChild(options);
+
+      const actions = document.createElement("div");
+      actions.className = "my-question-actions";
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "danger";
+      deleteButton.textContent = "🗑️ Delete this question";
+      deleteButton.addEventListener("click", function () {
+        deleteMyQuestions([question.id]);
+      });
+      actions.appendChild(deleteButton);
+      card.appendChild(actions);
+      target.appendChild(card);
+    });
+
+    updateDeleteControls();
+  }
+
+  async function refreshMyQuestions() {
+    const subjectKey = $("subject-select").value;
+    const target = $("my-questions-list");
+    if (!subjectKey) {
+      uploadedQuestions = [];
+      renderMyQuestions();
+      return;
+    }
+
+    target.textContent = "তোমার upload করা প্রশ্ন লোড হচ্ছে...";
+    $("my-questions-summary").textContent = "Supabase থেকে নিজের প্রশ্ন আনা হচ্ছে...";
+    try {
+      uploadedQuestions = await WBPQuestionStore.listMyQuestions(subjectKey);
+      renderMyQuestions();
+    } catch (error) {
+      uploadedQuestions = [];
+      selectedQuestionIds.clear();
+      target.textContent = "নিজের প্রশ্ন লোড করা যায়নি: " + error.message;
+      $("my-questions-summary").textContent = "Admin session পরীক্ষা করুন অথবা Refresh চাপুন।";
+      updateDeleteControls();
+    }
+  }
+
+  async function deleteMyQuestions(questionIds) {
+    const ids = (questionIds || []).map(Number).filter(Number.isFinite);
+    if (!ids.length) return;
+    const prompt = ids.length === 1
+      ? "এই প্রশ্নটি Supabase থেকে স্থায়ীভাবে Delete করতে চাও? এটি আর Admin upload list-এ থাকবে না।"
+      : "নির্বাচিত " + ids.length + "টি প্রশ্ন Supabase থেকে স্থায়ীভাবে Delete করতে চাও?";
+    if (!window.confirm(prompt)) return;
+
+    const button = $("delete-selected-questions-btn");
+    button.disabled = true;
+    try {
+      const result = await WBPQuestionStore.deleteQuestions(ids);
+      setMessage("subject-message",
+        (result.deletedCount || 0).toLocaleString("en-IN") +
+        "টি প্রশ্ন Supabase থেকে স্থায়ীভাবে Delete হয়েছে।");
+      await refreshSubjectCount();
+      await refreshMyQuestions();
+    } catch (error) {
+      setMessage("subject-message", "Delete করা যায়নি: " + error.message, true);
+      button.disabled = false;
+      updateDeleteControls();
+    }
   }
 
   function renderPreview(parsed) {
@@ -318,6 +455,7 @@
     try {
       const result = await WBPQuestionStore.bulkAddQuestions(subjectKey, lastValidQuestions);
       await refreshSubjectCount();
+      await refreshMyQuestions();
       setMessage("subject-message",
         result.count.toLocaleString("en-IN") + "টি প্রশ্ন সংরক্ষিত হয়েছে। নম্বর " +
         result.firstNumber + " থেকে " + result.lastNumber + "।");
@@ -346,7 +484,27 @@
     $("add-subject-btn").addEventListener("click", addSubject);
     $("subject-select").addEventListener("change", function () {
       refreshSubjectCount();
+      refreshMyQuestions();
       $("save-btn").disabled = !lastValidQuestions.length;
+    });
+    $("refresh-my-questions-btn").addEventListener("click", refreshMyQuestions);
+    $("select-all-my-questions").addEventListener("change", function () {
+      selectedQuestionIds.clear();
+      if (this.checked) {
+        uploadedQuestions.forEach(function (question) {
+          selectedQuestionIds.add(String(question.id));
+        });
+      }
+      renderMyQuestions();
+      if (this.checked) {
+        uploadedQuestions.forEach(function (question) {
+          selectedQuestionIds.add(String(question.id));
+        });
+        updateDeleteControls();
+      }
+    });
+    $("delete-selected-questions-btn").addEventListener("click", function () {
+      deleteMyQuestions(Array.from(selectedQuestionIds));
     });
     $("preview-btn").addEventListener("click", function () {
       renderPreview(parseBulkInput($("bulk-text").value));
