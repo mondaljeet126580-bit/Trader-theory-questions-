@@ -1,81 +1,81 @@
 # WBP & KP Exam MCQ Hub & Mock Simulator
 
-A Bengali-first, single-file MCQ study and mock-test app for WBP/KP exam practice.
+A Bengali-first MCQ study and mock-test application connected to the existing **Trade Theory Supabase project**.
 
-## Run the app
+## Run / publish
 
-This project uses plain HTML, CSS, and JavaScript. There is no Node.js build step or package installation.
+This is a static HTML, CSS, and JavaScript app. It does not require a Node build step.
 
-- Open \`index.html\` in a modern browser to run the study and mock-test app.
-- Open \`admin.html\` to manage subjects and bulk-import questions in the local preview.
-- To publish with GitHub Pages, open **Settings → Pages**, select deployment from the \`main\` branch and root folder, then save.
+- Open \`index.html\` for the user study and mock-test app.
+- Open \`admin.html\` for the protected Admin Panel.
+- The app uses the existing Supabase Auth accounts. Sign in with the email/password already registered in the Trade Theory Supabase project.
+- To publish with GitHub Pages, choose deployment from the \`main\` branch and root folder in **Settings → Pages**.
 
-## Current features
+## Supabase project and access model
 
-- Subject tabs and subject-name search.
-- Study mode with question explanations and page navigation.
-- Mock tests with configurable question count, timer, and question order.
-- Review of correct, wrong, and unanswered questions.
-- Bookmarks and filters for previously wrong or skipped questions.
-- Single and bulk prompts for Gemini.
-- Separate Admin Panel for subject creation and bulk MCQ import.
-- Text and JSON question import with validation and preview.
-- Browser-local question bank stored in IndexedDB; existing progress settings stay in Local Storage.
+The app is connected to the existing project named \`Trader-theory-questions-\` in \`ap-south-1\`. It uses the project's publishable key in browser code; no service-role key or database password is included.
 
-## Admin Panel: bulk question format
+- Users must sign in with Supabase Auth to open the app.
+- The current Admin account is checked against the existing \`public.study_admins\` table.
+- The Admin Panel requires both the existing Supabase account password and the additional Admin passcode. The passcode is verified by a database function; it is not embedded in the HTML or JavaScript.
+- The passcode is stored only as a salted hash in the non-exposed \`app_private\` schema. The verification function is executable only by authenticated users and checks Admin membership. Five failed attempts cause a 15-minute lockout.
+- Never put a Supabase service-role or secret key in this repository.
 
-From \`index.html\`, open **Admin Panel**, choose a subject, then paste multiple question blocks or upload a TXT/JSON file.
+## Admin Panel
 
-Example:
+The Admin Panel supports:
 
-\`\`\`text
-Q1: ভারতের রাজধানী কী?
-English: What is the capital of India?
-A) মুম্বাই
-B) নয়াদিল্লি
-C) কলকাতা
-D) চেন্নাই
-Answer: B
-Explanation: নয়াদিল্লি ভারতের রাজধানী।
+- Selecting an existing subject.
+- Creating a new subject.
+- Pasting many question blocks at once.
+- Importing TXT or JSON files.
+- Previewing and validating questions before saving.
+- Importing MCQs with 2–8 options, correct answer, and optional explanation.
+- Automatically continuing question numbers within a subject.
+- Writing rows to the existing \`public.subjects\` and \`public.mcq_questions\` tables in batches of 250.
 
-Q2: ২ + ২ = কত?
-A) ২
-B) ৩
-C) ৪
-D) ৫
-উত্তর: C
-ব্যাখ্যা: ২-এর সঙ্গে ২ যোগ করলে ৪ হয়।
-\`\`\`
+New subjects and questions are created with \`owner_id = auth.uid()\` and \`is_published = false\`. They remain private to their owner. Other users cannot read unpublished questions or subjects. Publishing content is not exposed as an Admin action in this version.
 
-JSON arrays are also accepted. Each question must have question text, at least two options, and a correct answer matching one of the option keys. Question numbers are assigned automatically after the last saved number in that subject.
+## Personal data and past performance
 
-There is no application-defined question-count cap. Imports are written in batches. In local preview, the browser's available IndexedDB storage quota and device capacity still apply.
+The user app reads only published content and content owned by the signed-in account, as enforced by Row Level Security (RLS).
 
-## Local preview and data persistence
+Mock-test submissions are stored in \`public.study_practice_sessions\`. Each record contains the signed-in user's ID, subject, score, correct/wrong/skipped totals, duration, timestamps, and answer snapshot. RLS restricts SELECT and INSERT to the owning user.
 
-The Admin Panel currently writes only to the current browser's IndexedDB. The main app reads that same local question bank on startup. Local additions do not sync to another browser, device, or visitor.
+The **My Performance** view shows the signed-in user's session history, average score, best score, and older individual answer records from \`public.question_attempts\`.
 
-**The Admin Panel is not yet protected by Supabase authentication.** It is a local-only preview and must not be treated as a production-secure Admin area until the Supabase Auth role check and database policies have been connected.
+The database already had one individual question-attempt record for the Admin account, but no prior mock-test session. New sessions are recorded from this app after submission.
 
-## Supabase integration status
+## Existing database objects used
 
-Supabase is intentionally not connected in this stage. No Supabase project, users, tables, rows, policies, or credentials have been read or changed.
+Existing study tables reused by the app:
 
-The \`WBPQuestionStore\` interface in \`question-store.js\` separates question storage from the UI. The current implementation uses IndexedDB. A later Supabase implementation can provide the same operations while preserving the Admin Panel and study UI.
+- \`subjects\`
+- \`chapters\`
+- \`mcq_questions\`
+- \`study_admins\`
+- \`question_attempts\`
+- \`mock_test_attempts\` (existing records retained)
+- \`user_progress\` (existing records retained)
 
-Before connecting, inspect the existing Supabase schema and Auth role setup, then map the app to the existing tables and existing Admin/User accounts. Do not create duplicate tables or copy credentials into GitHub. Never put a Supabase service-role key in browser code.
+One new study-only table was added: \`study_practice_sessions\`. No WhatsApp/chat tables were changed.
 
-See [SUPABASE_INTEGRATION.md](SUPABASE_INTEGRATION.md) for the planned connection and access-control checks.
-
-## Original sample question data
-
-The starter questions are bundled in \`index.html\`. On the first app load, they are copied into IndexedDB. New questions added through the Admin Panel are stored alongside them.
+Two nullable owner columns were added to the existing \`subjects\` and \`mcq_questions\` tables. Existing published General Science sample content remains public; the old personal History test row was assigned to the Admin owner and marked unpublished/private.
 
 ## Repository files
 
-- \`index.html\` — main app interface and study/mock-test logic.
-- \`admin.html\` — Admin Panel UI (local preview).
-- \`admin.js\` — bulk question parser, validation, preview, and subject controls.
-- \`question-store.js\` — IndexedDB question repository adapter.
-- \`README.md\` — setup and usage guide.
-- \`SUPABASE_INTEGRATION.md\` — plan for connecting the existing Supabase project later.
+- \`index.html\` — main study/mock-test UI.
+- \`admin.html\` — Admin sign-in and bulk question management UI.
+- \`admin.js\` — bulk question parser, validation, preview, and subject operations.
+- \`admin-auth.js\` — Admin Auth and database passcode verification.
+- \`supabase-client.js\` — Supabase URL and publishable client configuration.
+- \`supabase-question-store.js\` — Supabase question and performance data adapter.
+- \`study-app-integration.js\` — sign-in, private question loading, performance history.
+- \`question-store.js\` — old IndexedDB preview adapter, retained but not used by the connected pages.
+- \`SUPABASE_INTEGRATION.md\` — current schema, security and operating notes.
+
+## Important notes
+
+- The additional Admin passcode is a short numeric code. Keep Supabase Auth enabled as the primary login and retain the database lockout/RLS controls. A longer passphrase is safer.
+- Question import size is not limited by an application-level question count cap, but Supabase request, row-size, and project limits still apply.
+- Performance history begins recording new mock-test submissions after this deployment. Previous ad-hoc browser-only tests cannot be reconstructed unless they were already stored in Supabase.
