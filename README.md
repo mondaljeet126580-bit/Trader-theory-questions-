@@ -4,10 +4,11 @@ A Bengali-first, single-file MCQ study and mock-test app for WBP/KP exam practic
 
 ## Run the app
 
-This project currently uses plain HTML, CSS, and JavaScript. There is no Node.js build step or package installation.
+This project uses plain HTML, CSS, and JavaScript. There is no Node.js build step or package installation.
 
-- Open `index.html` in a modern browser to run it locally.
-- To publish it with GitHub Pages, open the repository's **Settings → Pages**, choose deployment from the `main` branch and the root folder, then save. GitHub will show the published URL after deployment is ready.
+- Open \`index.html\` in a modern browser to run the study and mock-test app.
+- Open \`admin.html\` to manage subjects and bulk-import questions in the local preview.
+- To publish with GitHub Pages, open **Settings → Pages**, select deployment from the \`main\` branch and root folder, then save.
 
 ## Current features
 
@@ -16,40 +17,65 @@ This project currently uses plain HTML, CSS, and JavaScript. There is no Node.js
 - Mock tests with configurable question count, timer, and question order.
 - Review of correct, wrong, and unanswered questions.
 - Bookmarks and filters for previously wrong or skipped questions.
-- Question-number selection and bulk/single prompts for Gemini.
-- Browser-local storage for bookmarks, settings, Gemini selections, wrong-question history, and skipped-question history.
+- Single and bulk prompts for Gemini.
+- Separate Admin Panel for subject creation and bulk MCQ import.
+- Text and JSON question import with validation and preview.
+- Browser-local question bank stored in IndexedDB; existing progress settings stay in Local Storage.
 
-## Current data and persistence
+## Admin Panel: bulk question format
 
-The bundled `questionsDatabase` is in `index.html`. The current starter dataset contains **6 questions across 4 subjects**; add or replace question objects there to populate the full question bank.
+From \`index.html\`, open **Admin Panel**, choose a subject, then paste multiple question blocks or upload a TXT/JSON file.
 
-Progress is stored in the current browser's local storage. It is not synchronized across browsers or devices. **Supabase is not configured in this version**: no database client, credentials, migrations, or remote data operations are included.
+Example:
 
-## Question object shape
+\`\`\`text
+Q1: ভারতের রাজধানী কী?
+English: What is the capital of India?
+A) মুম্বাই
+B) নয়াদিল্লি
+C) কলকাতা
+D) চেন্নাই
+Answer: B
+Explanation: নয়াদিল্লি ভারতের রাজধানী।
 
-Each subject contains an array of question objects. For example:
+Q2: ২ + ২ = কত?
+A) ২
+B) ৩
+C) ৪
+D) ৫
+উত্তর: C
+ব্যাখ্যা: ২-এর সঙ্গে ২ যোগ করলে ৪ হয়।
+\`\`\`
 
-```js
-{
-  no: 1,
-  bn: "বাংলায় প্রশ্নের লেখা",
-  en: "Optional English translation",
-  options: {
-    A: "প্রথম বিকল্প",
-    B: "দ্বিতীয় বিকল্প",
-    C: "তৃতীয় বিকল্প",
-    D: "চতুর্থ বিকল্প"
-  },
-  correct: "A",
-  explanation: "সঠিক উত্তরের সংক্ষিপ্ত ব্যাখ্যা"
-}
-```
+JSON arrays are also accepted. Each question must have question text, at least two options, and a correct answer matching one of the option keys. Question numbers are assigned automatically after the last saved number in that subject.
 
-The `en` and `explanation` fields are optional. Keep `no` unique within each subject and set `correct` to one of the option keys.
+There is no application-defined question-count cap. Imports are written in batches. In local preview, the browser's available IndexedDB storage quota and device capacity still apply.
 
-## Repository structure
+## Local preview and data persistence
 
-- `index.html` — the complete app, styles, bundled sample questions, and client-side logic.
-- `README.md` — run instructions, current features, and implementation notes.
+The Admin Panel currently writes only to the current browser's IndexedDB. The main app reads that same local question bank on startup. Local additions do not sync to another browser, device, or visitor.
 
-Do not place private API keys or service-role credentials in this client-side HTML file. When a remote backend is added, use the appropriate public client configuration and enforce access through server-side policies.
+**The Admin Panel is not yet protected by Supabase authentication.** It is a local-only preview and must not be treated as a production-secure Admin area until the Supabase Auth role check and database policies have been connected.
+
+## Supabase integration status
+
+Supabase is intentionally not connected in this stage. No Supabase project, users, tables, rows, policies, or credentials have been read or changed.
+
+The \`WBPQuestionStore\` interface in \`question-store.js\` separates question storage from the UI. The current implementation uses IndexedDB. A later Supabase implementation can provide the same operations while preserving the Admin Panel and study UI.
+
+Before connecting, inspect the existing Supabase schema and Auth role setup, then map the app to the existing tables and existing Admin/User accounts. Do not create duplicate tables or copy credentials into GitHub. Never put a Supabase service-role key in browser code.
+
+See [SUPABASE_INTEGRATION.md](SUPABASE_INTEGRATION.md) for the planned connection and access-control checks.
+
+## Original sample question data
+
+The starter questions are bundled in \`index.html\`. On the first app load, they are copied into IndexedDB. New questions added through the Admin Panel are stored alongside them.
+
+## Repository files
+
+- \`index.html\` — main app interface and study/mock-test logic.
+- \`admin.html\` — Admin Panel UI (local preview).
+- \`admin.js\` — bulk question parser, validation, preview, and subject controls.
+- \`question-store.js\` — IndexedDB question repository adapter.
+- \`README.md\` — setup and usage guide.
+- \`SUPABASE_INTEGRATION.md\` — plan for connecting the existing Supabase project later.
