@@ -4,6 +4,7 @@
   const $ = function (id) { return document.getElementById(id); };
   let lastValidQuestions = [];
   let lastErrors = [];
+  let eventsInstalled = false;
 
   function escapeHTML(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (char) {
@@ -402,7 +403,10 @@
   }
 
   async function init() {
-    installEvents();
+    if (!eventsInstalled) {
+      installEvents();
+      eventsInstalled = true;
+    }
     try {
       await WBPQuestionStore.load();
       await refreshSubjects();
