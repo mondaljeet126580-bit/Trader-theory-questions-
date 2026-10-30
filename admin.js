@@ -415,5 +415,5 @@
   }
 
   window.WBPAdminParser = Object.freeze({ parseBulkInput: parseBulkInput });
-  document.addEventListener("DOMContentLoaded", init);
+  window.WBPAdmin = Object.freeze({ init: init });
 })();
