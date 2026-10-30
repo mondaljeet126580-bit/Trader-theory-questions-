@@ -35,12 +35,17 @@
         throw new Error("Passcode সঠিক নয় অথবা সাময়িক lock সক্রিয় হয়েছে।");
       }
 
-      // Keep the temporary bearer token only in this browser tab, never the passcode.
-      sessionStorage.setItem(TOKEN_KEY, token);
+      // Keep only the short-lived server token (never the passcode) so the
+      // main app can read private questions after same-browser navigation.
+      localStorage.setItem(TOKEN_KEY, token);
+      try {
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+    } catch (_) {}
       $("admin-passcode").value = "";
       $("admin-login-panel").classList.add("hidden");
       $("admin-workspace").classList.remove("hidden");
-      $("admin-session-label").textContent = "Admin Panel unlocked for this tab.";
+      $("admin-session-label").textContent = "Admin Panel unlocked in this browser (expires in 4 hours).";
       workspaceOpened = true;
 
       await window.WBPAdmin.init();
@@ -56,7 +61,9 @@
 
   async function lockAdmin() {
     let token = "";
-    try { token = sessionStorage.getItem(TOKEN_KEY) || ""; } catch (_) {}
+    try {
+      token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
+    } catch (_) {}
 
     if (token && window.supabaseClient) {
       try {
@@ -86,11 +93,13 @@
     });
 
     let existingToken = "";
-    try { existingToken = sessionStorage.getItem(TOKEN_KEY) || ""; } catch (_) {}
+    try {
+      existingToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
+    } catch (_) {}
     if (existingToken) {
       $("admin-passcode").value = "";
-      $("admin-passcode").placeholder = "এই tab-এ আগেই unlock করা আছে";
-      message("এই tab-এর Admin session যাচাই হচ্ছে...", false);
+      $("admin-passcode").placeholder = "এই browser-এ Admin unlock করা আছে";
+      message("এই browser-এর Admin session যাচাই হচ্ছে...", false);
 
       window.supabaseClient.rpc("study_admin_load_content", { p_token: existingToken })
         .then(function (result) {
@@ -100,7 +109,7 @@
         .then(function () {
           $("admin-login-panel").classList.add("hidden");
           $("admin-workspace").classList.remove("hidden");
-          $("admin-session-label").textContent = "Admin Panel unlocked for this tab.";
+          $("admin-session-label").textContent = "Admin Panel unlocked in this browser (expires in 4 hours).";
           workspaceOpened = true;
           $("admin-login-btn").textContent = "Admin unlocked";
         })
