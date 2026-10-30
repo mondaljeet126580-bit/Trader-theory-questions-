@@ -9,6 +9,20 @@
 body { background-color:#081325; color:#ffffff; padding:20px 10px 85px 10px; display:flex; justify-content:center; min-height:100vh; }
 .app-container { width:100%; max-width:680px; margin:0 auto; }
 .hidden { display:none !important; }
+.auth-gate { width:100%; max-width:460px; margin:8vh auto 0; }
+.auth-card { background:rgba(15,34,66,.95); border:1px solid rgba(59,130,246,.3); border-radius:18px; padding:24px; box-shadow:0 12px 35px rgba(0,0,0,.35); }
+.auth-card h2 { margin:12px 0; }
+.auth-card .input-field { margin-bottom:10px; }
+.auth-card .btn { margin-top:6px; }
+.muted { color:#94a3b8; font-size:13px; line-height:1.6; }
+.session-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 13px; margin-bottom:14px; background:#0f223f; border:1px solid #29466c; border-radius:10px; color:#bfdbfe; font-size:12px; }
+#performance-list { display:grid; gap:12px; }
+.performance-card { background:rgba(15,34,66,.88); border:1px solid rgba(59,130,246,.23); border-radius:13px; padding:15px; margin-bottom:10px; }
+.performance-card summary { cursor:pointer; font-weight:700; color:#e2e8f0; }
+.performance-card .perf-date { color:#94a3b8; font-size:11px; margin:6px 0; }
+.performance-card .perf-metrics { display:flex; flex-wrap:wrap; gap:8px; font-size:12px; color:#cbd5e1; margin-top:8px; }
+.performance-answer { padding:9px 0; border-top:1px solid #263750; font-size:12px; line-height:1.6; }
+@media(max-width:560px) { .session-bar { align-items:flex-start; flex-direction:column; } .auth-card { padding:18px; } }
 .glass-panel { background:rgba(15, 34, 66, 0.85); border:1px solid rgba(59, 130, 246, 0.2); border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 8px 32px 0 rgba(0,0,0,0.45); }
 h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 
@@ -123,7 +137,21 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 </style>
 </head>
 <body>
-<div class="app-container">
+<div id="auth-gate" class="auth-gate">
+  <div class="auth-card">
+    <div class="exam-badge">WBP & KP EXAM PORTAL</div>
+    <h2>তোমার অ্যাকাউন্টে Sign in করো</h2>
+    <p class="muted">Supabase-এর আগে থেকে থাকা User বা Admin account ব্যবহার করো। তোমার private questions ও past performance শুধু তোমার login-এর মাধ্যমে দেখা যাবে।</p>
+    <label for="auth-email">Email</label>
+    <input id="auth-email" type="email" class="input-field" autocomplete="username" placeholder="Supabase account email">
+    <label for="auth-password">Password</label>
+    <input id="auth-password" type="password" class="input-field" autocomplete="current-password" placeholder="Supabase account password">
+    <button id="auth-login-btn" class="btn btn-mock" type="button">Sign in</button>
+    <div id="auth-message" class="muted" style="margin-top:12px;" aria-live="polite"></div>
+  </div>
+</div>
+
+<div class="app-container hidden">
 
   <!-- TOAST NOTIFICATION FOR GEMINI -->
   <div id="gemini-toast" class="gemini-toast hidden"></div>
@@ -142,7 +170,12 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
     <button class="nav-tab-btn" id="nav-btn-study" onclick="App.startReadMode()">📖 স্টাডি মোড</button>
     <button class="nav-tab-btn" id="nav-btn-mock" onclick="App.startMockMode()">✍️ মক টেস্ট মোড</button>
     <button class="nav-tab-btn star-filter-nav" onclick="App.startStarredMock()">⭐ শুধু স্টার করা প্রশ্ন</button>
+    <button class="nav-tab-btn" onclick="App.showPerformance()">📈 আমার Performance</button>
     <button class="nav-tab-btn" onclick="window.location.href='admin.html'">🛠️ Admin Panel</button>
+  </div>
+  <div id="app-session-bar" class="session-bar hidden">
+    <span id="app-user-email"></span>
+    <button class="btn-secondary" id="app-logout-btn" type="button">Sign out</button>
   </div>
 
   <!-- DASHBOARD VIEW -->
@@ -226,7 +259,7 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
     </div>
 
     <div style="text-align:center;font-size:12px;color:#64748b;">
-      বর্তমানে লোড করা আছে: <span id="telemetry-total-count" style="color:#38bdf8;font-weight:bold;">0</span> টি প্রশ্ন | লোকাল স্টোরেজ স্থায়ী সংরক্ষণ চালু আছে
+      Supabase-এ থাকা তোমার জন্য দৃশ্যমান প্রশ্ন: <span id="telemetry-total-count" style="color:#38bdf8;font-weight:bold;">0</span> টি
     </div>
   </div>
 
@@ -296,6 +329,23 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
     </div>
     <h3 style="margin:20px 0 10px 0;">উত্তরপত্র ও বিস্তারিত মূল্যায়ন (রিভিউ মোড):</h3>
     <div id="review-list-target"></div>
+    <div id="performance-save-status" class="muted" style="margin-top:12px;" aria-live="polite"></div>
+  </div>
+
+  <!-- PERSONAL PERFORMANCE HISTORY -->
+  <div id="performance-view" class="view-section hidden">
+    <div class="back-home-container">
+      <button class="btn-home" onclick="App.goHome()">← মূল ড্যাশবোর্ডে ফিরে যান</button>
+    </div>
+    <h2>📈 আমার Past Performance</h2>
+    <p class="muted">এই রিপোর্ট শুধু বর্তমানে signed-in account-এর history দেখায়। অন্য User-এর ফলাফল এখানে লোড হবে না।</p>
+    <div class="grid-3" style="margin:14px 0;">
+      <div class="glass-panel"><div class="q-title">মোট Mock Test</div><strong id="perf-total-tests">0</strong></div>
+      <div class="glass-panel"><div class="q-title">গড় নম্বর</div><strong id="perf-average-score">0%</strong></div>
+      <div class="glass-panel"><div class="q-title">সেরা নম্বর</div><strong id="perf-best-score">0%</strong></div>
+    </div>
+    <div id="perf-legacy-note" class="muted" style="margin:12px 0;"></div>
+    <div id="performance-list"></div>
   </div>
 
 </div>
@@ -391,8 +441,10 @@ const questionsDatabase = {
 };
 </script>
 
-<!-- Shared question data store (local IndexedDB until Supabase is connected) -->
-<script src="question-store.js"></script>
+<!-- Supabase client and authenticated question store -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+<script src="supabase-client.js"></script>
+<script src="supabase-question-store.js"></script>
 
 <!-- অ্যাপ্লিকেশন কোর ইঞ্জিন -->
 <script>
@@ -1131,5 +1183,6 @@ ${questionBlocksArray.join('\n\n')}
 
 window.addEventListener('DOMContentLoaded', () => App.init());
 </script>
+<script src="study-app-integration.js"></script>
 </body>
 </html>
