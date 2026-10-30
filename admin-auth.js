@@ -54,7 +54,20 @@
     }
   }
 
-  function lockAdmin() {
+  async function lockAdmin() {
+    let token = "";
+    try { token = sessionStorage.getItem(TOKEN_KEY) || ""; } catch (_) {}
+
+    if (token && window.supabaseClient) {
+      try {
+        await window.supabaseClient.rpc("study_admin_lock_session", {
+          p_token: token
+        });
+      } catch (error) {
+        console.warn("Admin session revoke request did not complete.", error);
+      }
+    }
+
     try { sessionStorage.removeItem(TOKEN_KEY); } catch (_) {}
     workspaceOpened = false;
     $("admin-workspace").classList.add("hidden");
@@ -92,8 +105,9 @@
           $("admin-login-btn").textContent = "Admin unlocked";
         })
         .catch(function (error) {
-          lockAdmin();
-          message("Admin session শেষ হয়েছে: " + error.message, true);
+          lockAdmin().then(function () {
+            message("Admin session শেষ হয়েছে: " + error.message, true);
+          });
         });
     } else {
       message("শুধু Admin passcode দিয়ে unlock করুন।", false);
