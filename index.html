@@ -138,6 +138,7 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
     <button class="nav-tab-btn" id="nav-btn-study" onclick="App.startReadMode()">📖 স্টাডি মোড</button>
     <button class="nav-tab-btn" id="nav-btn-mock" onclick="App.startMockMode()">✍️ মক টেস্ট মোড</button>
     <button class="nav-tab-btn star-filter-nav" onclick="App.startStarredMock()">⭐ শুধু স্টার করা প্রশ্ন</button>
+    <button class="nav-tab-btn" onclick="window.location.href='admin.html'">🛠️ Admin Panel</button>
   </div>
 
   <!-- DASHBOARD VIEW -->
@@ -386,6 +387,9 @@ const questionsDatabase = {
 };
 </script>
 
+<!-- Shared question data store (local IndexedDB until Supabase is connected) -->
+<script src="question-store.js"></script>
+
 <!-- অ্যাপ্লিকেশন কোর ইঞ্জিন -->
 <script>
 const App = {
@@ -397,8 +401,28 @@ const App = {
   cachedWrongTracker: {},
   cachedSkippedTracker: {},
   geminiSelectedPool: {},
+  subjectNames: {},
 
-  init: function() {
+  init: async function() {
+    try {
+      if (window.WBPQuestionStore) {
+        const storedData = await window.WBPQuestionStore.load(questionsDatabase, {
+          general_science: "সাধারণ বিজ্ঞান (Science)",
+          wbp_kp_gk: "জিকে ও কারেন্ট অ্যাফেয়ার্স (GK & CA)",
+          mathematics: "গণিত (Mathematics)",
+          reasoning: "রিজনিং ও জিআই (Reasoning)"
+        });
+        Object.keys(questionsDatabase).forEach(key => delete questionsDatabase[key]);
+        this.subjectNames = {};
+        storedData.subjects.forEach(subject => {
+          questionsDatabase[subject.key] = storedData.questions[subject.key] || [];
+          this.subjectNames[subject.key] = subject.name;
+        });
+      }
+    } catch(error) {
+      console.error("Question store could not be loaded; using bundled questions.", error);
+    }
+
     this.loadLocalStorageBuffers();
     this.renderSubjectTabs();
     this.syncMaxBounds();
@@ -446,6 +470,7 @@ const App = {
   },
 
   getSubjectDisplayName: function(key) {
+    if(this.subjectNames && this.subjectNames[key]) return this.subjectNames[key];
     const customNames = {
       general_science: "সাধারণ বিজ্ঞান (Science)",
       wbp_kp_gk: "জিকে ও কারেন্ট অ্যাফেয়ার্স (GK & CA)",
