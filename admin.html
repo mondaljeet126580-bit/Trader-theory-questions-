@@ -62,6 +62,8 @@
     .delete-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:14px; padding:10px; border:1px solid #263750; border-radius:10px; background:#0b172b; }
     .delete-select-all { display:flex; align-items:center; gap:8px; margin:0; }
     .delete-select-all input, .delete-question-check { width:auto; display:inline-block; accent-color:#38bdf8; }
+    #clear-all-questions-btn { width:100%; min-height:48px; white-space:normal; }
+    #subject-database-management .actions button { flex:1 1 220px; white-space:normal; }
     button.danger { background:#7f1d1d; border-color:#ef4444; color:#fff; }
     button.danger:hover { background:#991b1b; }
     .my-question-card { background:#0b172b; border:1px solid #263750; border-radius:10px; padding:12px; }
@@ -133,8 +135,27 @@
       <div id="subject-message" class="small" aria-live="polite"></div>
     </section>
 
+    <section class="panel" id="subject-database-management">
+      <h2>৩. Subject ও Question Database ম্যানেজমেন্ট</h2>
+      <p class="muted">নিচের অপশনগুলো Supabase-এর আসল database-এ কাজ করবে। Delete করার আগে Subject slug লিখে নিশ্চিত হতে হবে।</p>
+      <div class="notice warn">
+        <strong>সতর্কতা:</strong> Delete স্থায়ী। All Questions মুছলে সব Subject-এর MCQ, bookmarks, question attempts ও mock-test question links মুছবে; Subject ও Theory Notes থাকবে। Subject Delete করলে তার MCQ, Chapters ও Theory Notes-ও মুছে যাবে। Performance session-এর saved history থাকবে।
+      </div>
+      <label for="subject-select">যে Subject-এ কাজ করবে</label>
+      <div id="management-subject-name" class="format">উপরের Subject নির্বাচন করুন।</div>
+      <div class="actions">
+        <button id="clear-subject-questions-btn" class="danger" type="button">🗑️ এই Subject-এর সব প্রশ্ন মুছুন</button>
+        <button id="delete-subject-btn" class="danger" type="button">✖ এই Subject-সহ তার Data Delete</button>
+      </div>
+      <div class="divider" style="height:1px;background:#334155;margin:18px 0;"></div>
+      <h3 style="margin:0 0 8px;">সব Subject-এর সব প্রশ্ন মুছুন</h3>
+      <p class="small">এটি সব Subject-এর MCQ একসঙ্গে মুছবে। Subject নামগুলো থাকবে, যাতে পরে আবার নতুন প্রশ্ন যোগ করতে পারো।</p>
+      <button id="clear-all-questions-btn" class="danger" type="button">⚠️ ALL SUBJECTS — DELETE ALL QUESTIONS</button>
+      <div id="database-management-status" class="small" aria-live="polite"></div>
+    </section>
+
     <section class="panel">
-      <h2>৩. একসঙ্গে অনেকগুলি প্রশ্ন Paste করুন</h2>
+      <h2>৪. একসঙ্গে অনেকগুলি প্রশ্ন Paste করুন</h2>
       <p class="muted">একটি প্রশ্নের পরে পরের প্রশ্ন লিখুন। Q1 / প্রশ্ন ১ / 1. দিয়ে প্রশ্ন শুরু করতে পারেন। বিকল্প A–H পর্যন্ত দেওয়া যাবে। সঠিক উত্তর ও ব্যাখ্যা লিখুন। JSON array-ও গ্রহণ করা হবে।</p>
 
       <div class="actions">
@@ -165,7 +186,7 @@ Q2: ..."></textarea>
     </section>
 
     <section id="preview-panel" class="panel hidden">
-      <h2>৪. Import-এর আগে যাচাই</h2>
+      <h2>৫. Import-এর আগে যাচাই</h2>
       <div class="stats">
         <div class="stat"><strong id="valid-count">0</strong><span>সঠিক প্রশ্ন</span></div>
         <div class="stat"><strong id="error-count">0</strong><span>সমস্যাযুক্ত ব্লক</span></div>
@@ -199,7 +220,7 @@ Q2: ..."></textarea>
     </section>
 
     <section class="panel">
-      <h2>Paste করার নমুনা</h2>
+      <h2>৭. Paste করার নমুনা</h2>
       <div class="format">Q1: ভারতের রাজধানী কী?
 English: What is the capital of India?
 A) মুম্বাই
