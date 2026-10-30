@@ -10,8 +10,9 @@
   App.performanceSaving = false;
 
   function currentAdminToken() {
-    try { return sessionStorage.getItem(TOKEN_KEY) || ""; }
-    catch (_) { return ""; }
+    try {
+      return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
+    } catch (_) { return ""; }
   }
 
   App.lastLoadedAdminToken = null;
@@ -152,19 +153,25 @@
     }
   }
 
-  window.addEventListener("pageshow", function (event) {
-    if (event.persisted) refreshAfterAdminReturn(true);
-    else refreshAfterAdminReturn(false);
+  // Always refresh on return, even when the Admin token did not change:
+  // questions may have been added/deleted or subjects modified in admin.html.
+  window.addEventListener("pageshow", function () {
+    refreshAfterAdminReturn(true);
   });
 
   window.addEventListener("focus", function () {
-    refreshAfterAdminReturn(false);
+    refreshAfterAdminReturn(true);
   });
 
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "visible") {
-      refreshAfterAdminReturn(false);
+      refreshAfterAdminReturn(true);
     }
+  });
+
+  // If Admin is opened in another tab, refresh this tab when its token changes.
+  window.addEventListener("storage", function (event) {
+    if (event.key === TOKEN_KEY) refreshAfterAdminReturn(true);
   });
 
   const originalStartMockMode = App.startMockMode;
