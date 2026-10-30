@@ -137,21 +137,7 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 </style>
 </head>
 <body>
-<div id="auth-gate" class="auth-gate">
-  <div class="auth-card">
-    <div class="exam-badge">WBP & KP EXAM PORTAL</div>
-    <h2>তোমার অ্যাকাউন্টে Sign in করো</h2>
-    <p class="muted">Supabase-এর আগে থেকে থাকা User বা Admin account ব্যবহার করো। তোমার private questions ও past performance শুধু তোমার login-এর মাধ্যমে দেখা যাবে।</p>
-    <label for="auth-email">Email</label>
-    <input id="auth-email" type="email" class="input-field" autocomplete="username" placeholder="Supabase account email">
-    <label for="auth-password">Password</label>
-    <input id="auth-password" type="password" class="input-field" autocomplete="current-password" placeholder="Supabase account password">
-    <button id="auth-login-btn" class="btn btn-mock" type="button">Sign in</button>
-    <div id="auth-message" class="muted" style="margin-top:12px;" aria-live="polite"></div>
-  </div>
-</div>
-
-<div class="app-container hidden">
+<div class="app-container">
 
   <!-- TOAST NOTIFICATION FOR GEMINI -->
   <div id="gemini-toast" class="gemini-toast hidden"></div>
@@ -173,16 +159,13 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
     <button class="nav-tab-btn" onclick="App.showPerformance()">📈 আমার Performance</button>
     <button class="nav-tab-btn" onclick="window.location.href='admin.html'">🛠️ Admin Panel</button>
   </div>
-  <div id="app-session-bar" class="session-bar hidden">
-    <span id="app-user-email"></span>
-    <button class="btn-secondary" id="app-logout-btn" type="button">Sign out</button>
-  </div>
 
   <!-- DASHBOARD VIEW -->
   <div id="dashboard-view" class="view-section">
     <div class="exam-badge">🚓 WBP & KP EXAM PORTAL • পশ্চিমবঙ্গ ও কলকাতা পুলিশ রিক্রুটমেন্ট হাব</div>
     <div class="main-header" id="dynamic-title">WBP & KP Exam MCQ Hub & Mock Simulator</div>
     <div class="sub-header">WBP Constable, Lady Constable, SI এবং KP পরীক্ষার প্রস্তুতি ও অনলাইন মক টেস্ট</div>
+    <div id="app-data-status" class="muted" style="margin:0 0 14px 0;" aria-live="polite">Published প্রশ্ন লোড হচ্ছে...</div>
 
     <!-- SUBJECT SEARCH & DYNAMIC TABS -->
     <div class="glass-panel" style="padding-bottom:12px;">
@@ -338,7 +321,7 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
       <button class="btn-home" onclick="App.goHome()">← মূল ড্যাশবোর্ডে ফিরে যান</button>
     </div>
     <h2>📈 আমার Past Performance</h2>
-    <p class="muted">এই রিপোর্ট শুধু বর্তমানে signed-in account-এর history দেখায়। অন্য User-এর ফলাফল এখানে লোড হবে না।</p>
+    <p class="muted">Admin Panel unlock থাকলে Supabase-এর private history, না থাকলে এই browser-এ সংরক্ষিত history দেখাবে।</p>
     <div class="grid-3" style="margin:14px 0;">
       <div class="glass-panel"><div class="q-title">মোট Mock Test</div><strong id="perf-total-tests">0</strong></div>
       <div class="glass-panel"><div class="q-title">গড় নম্বর</div><strong id="perf-average-score">0%</strong></div>
