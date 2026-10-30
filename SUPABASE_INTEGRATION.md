@@ -6,7 +6,7 @@ This integration uses only the Supabase project named Trader-theory-questions- (
 
 ## Main app
 
-The main app no longer displays a Supabase email/password login form. It opens in Guest mode and reads only published rows through the existing RLS policies.
+The main app no longer displays a Supabase email/password login form. It opens in Guest mode and reads only published rows through the existing RLS policies. It refreshes the question bank on `pageshow`, window focus, document visibility return, and Admin-session storage changes. This ensures question additions/deletions and subject changes appear when returning from the Admin Panel.
 
 When the Admin Panel is unlocked in the same browser, a temporary Admin session token is held in localStorage. The main app can request published content plus the existing Admin owner's private subjects/questions across navigation, page reloads, and tabs. The token expires server-side after four hours and is removed/revoked by the Admin Lock action.
 
@@ -47,6 +47,10 @@ The session helper is located in app_private, not an exposed schema. Direct acce
 - Existing rows in public.question_attempts for the Admin owner are included in the history display.
 
 Local Guest history does not automatically sync to other browsers/devices. Cloud history is available when the Admin Panel has been unlocked in that tab.
+
+## Original bundled subject data restored
+
+The original main-app file contained four starter subjects (General Science, WBP/KP GK, Mathematics, and Reasoning) and six starter MCQs. Those records were not all present in Supabase, so missing public subject rows and missing starter MCQs were inserted idempotently into the existing study tables. The four original subjects are now published. The existing private History and Geography subjects remain private and are visible only with the valid Admin session.
 
 ## Existing schema changes already applied
 
