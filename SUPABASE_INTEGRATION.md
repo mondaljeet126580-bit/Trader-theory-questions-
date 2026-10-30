@@ -18,7 +18,7 @@ When the Admin Panel is unlocked in the same browser tab, a temporary Admin sess
 4. On success, a high-entropy random token is created. Only its SHA-256 hash is stored in app_private.study_admin_sessions. The browser receives the raw token and stores it in tab-scoped sessionStorage.
 5. The token expires after four hours. Each Admin RPC validates the hash and expiry. The token is not stored in GitHub or included in source code.
 6. Five failed passcode attempts from the same observed source/IP + user-agent fingerprint cause a 15-minute lockout.
-7. The Admin UI's Lock action removes the token from the current tab.
+7. The Admin UI's Lock action calls study_admin_lock_session(token) to revoke the server session, then removes the token from the current tab.
 
 The unlock function uses the single existing row in public.study_admins to identify the Admin owner. It returns no token unless exactly one Study Admin is configured.
 
@@ -32,6 +32,7 @@ Admin RPCs are exposed to the Supabase Data API so they can be called from the s
 - study_admin_count_questions(token, subject_slug): counts questions visible to that Admin session.
 - study_admin_save_performance(token, session): saves a private performance session under the configured Admin owner.
 - study_admin_list_performance(token): reads that owner's performance sessions and legacy question-attempt records.
+- study_admin_lock_session(token): revokes the active token when the Admin locks the panel.
 
 The session helper is located in app_private, not an exposed schema. Direct access to the app_private tables is revoked from anon/authenticated roles. The old Auth-based passcode verification RPC was revoked because the new Admin flow does not use it.
 
