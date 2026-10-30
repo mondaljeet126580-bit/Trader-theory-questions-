@@ -376,9 +376,18 @@
       await refreshSubjectCount();
       await refreshMyQuestions();
     } catch (error) {
-      setMessage("subject-message", "Delete করা যায়নি: " + error.message, true);
-      button.disabled = false;
-      updateDeleteControls();
+      const deletedBeforeFailure = Number(error.deletedBeforeFailure) || 0;
+      if (deletedBeforeFailure > 0) {
+        setMessage("subject-message",
+          deletedBeforeFailure + "টি প্রশ্ন Delete হয়েছে, কিন্তু পরের batch ব্যর্থ হয়েছে: " + error.message,
+          true);
+        await refreshSubjectCount();
+        await refreshMyQuestions();
+      } else {
+        setMessage("subject-message", "Delete করা যায়নি: " + error.message, true);
+        button.disabled = false;
+        updateDeleteControls();
+      }
     }
   }
 
