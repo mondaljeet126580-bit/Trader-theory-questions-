@@ -77,17 +77,24 @@
     if (existingToken) {
       $("admin-passcode").value = "";
       $("admin-passcode").placeholder = "এই tab-এ আগেই unlock করা আছে";
-      message("এই tab-এর Admin session পাওয়া গেছে।", false);
-      window.WBPAdmin.init().then(function () {
-        $("admin-login-panel").classList.add("hidden");
-        $("admin-workspace").classList.remove("hidden");
-        $("admin-session-label").textContent = "Admin Panel unlocked for this tab.";
-        workspaceOpened = true;
-        $("admin-login-btn").textContent = "Admin unlocked";
-      }).catch(function (error) {
-        lockAdmin();
-        message("Admin session শেষ হয়েছে: " + error.message, true);
-      });
+      message("এই tab-এর Admin session যাচাই হচ্ছে...", false);
+
+      window.supabaseClient.rpc("study_admin_load_content", { p_token: existingToken })
+        .then(function (result) {
+          if (result.error) throw result.error;
+          return window.WBPAdmin.init();
+        })
+        .then(function () {
+          $("admin-login-panel").classList.add("hidden");
+          $("admin-workspace").classList.remove("hidden");
+          $("admin-session-label").textContent = "Admin Panel unlocked for this tab.";
+          workspaceOpened = true;
+          $("admin-login-btn").textContent = "Admin unlocked";
+        })
+        .catch(function (error) {
+          lockAdmin();
+          message("Admin session শেষ হয়েছে: " + error.message, true);
+        });
     } else {
       message("শুধু Admin passcode দিয়ে unlock করুন।", false);
     }
