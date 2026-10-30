@@ -243,12 +243,23 @@
       throw new Error("Delete করার জন্য প্রশ্ন নির্বাচন করুন।");
     }
 
-    const result = await client().rpc("study_admin_delete_questions", {
-      p_token: token,
-      p_question_ids: questionIds.map(Number)
-    });
-    if (result.error) throw result.error;
-    return result.data || { deletedCount: 0 };
+    let deletedCount = 0;
+    const batchSize = 500;
+    const ids = questionIds.map(Number);
+
+    for (let offset = 0; offset < ids.length; offset += batchSize) {
+      const result = await client().rpc("study_admin_delete_questions", {
+        p_token: token,
+        p_question_ids: ids.slice(offset, offset + batchSize)
+      });
+      if (result.error) {
+        result.error.deletedBeforeFailure = deletedCount;
+        throw result.error;
+      }
+      deletedCount += Number(result.data && result.data.deletedCount) || 0;
+    }
+
+    return { deletedCount: deletedCount };
   }
 
   async function listPerformance() {
