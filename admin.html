@@ -81,19 +81,15 @@
     </header>
 
     <section id="admin-login-panel" class="panel">
-      <h2>Admin নিরাপদ প্রবেশ</h2>
-      <p class="muted">প্রথমে তোমার আগে থেকে থাকা Supabase Admin account দিয়ে Sign in করো। তারপর অতিরিক্ত Admin passcode দাও। Admin access database-এর study_admins record দিয়ে যাচাই হয়।</p>
-      <label for="admin-email">Admin email</label>
-      <input id="admin-email" type="email" autocomplete="username" placeholder="তোমার Supabase email">
-      <label for="admin-account-password">Supabase account password</label>
-      <input id="admin-account-password" type="password" autocomplete="current-password" placeholder="Supabase account password">
-      <label for="admin-passcode">Admin Panel passcode</label>
+      <h2>Admin Panel Password</h2>
+      <p class="muted">Admin Panel unlock করতে তোমার নির্ধারিত passcode লিখো। এই password শুধু এই Admin Panel-এ লাগবে; মূল অ্যাপ খুলতে কোনো password লাগবে না।</p>
+      <label for="admin-passcode">Admin passcode</label>
       <input id="admin-passcode" type="password" inputmode="numeric" maxlength="64" autocomplete="off" placeholder="Admin passcode">
       <div class="actions">
-        <button id="admin-login-btn" class="primary" type="button">Sign in & unlock Admin</button>
+        <button id="admin-login-btn" class="primary" type="button">Unlock Admin Panel</button>
       </div>
       <div id="admin-auth-message" class="small" aria-live="polite"></div>
-      <p class="small">Passcode browser source code-এ রাখা নেই; Supabase-এর non-exposed schema-তে salted hash থাকে এবং পাঁচবার ভুল দিলে ১৫ মিনিটের জন্য যাচাই আটকে যায়।</p>
+      <p class="small">Passcode source code-এ রাখা নেই। Supabase server-side hash দিয়ে যাচাই করে এবং পাঁচবার ভুল দিলে ১৫ মিনিটের lockout দেয়।</p>
     </section>
 
     <div id="admin-workspace" class="hidden">
