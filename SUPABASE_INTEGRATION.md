@@ -52,6 +52,17 @@ Local Guest history does not automatically sync to other browsers/devices. Cloud
 
 The original main-app file contained four starter subjects (General Science, WBP/KP GK, Mathematics, and Reasoning) and six starter MCQs. Those records were not all present in Supabase, so missing public subject rows and missing starter MCQs were inserted idempotently into the existing study tables. The four original subjects are now published. The existing private History and Geography subjects remain private and are visible only with the valid Admin session.
 
+## Subject-specific MCQ relationship and deletion controls
+
+- Added `public.mcq_questions.subject_id bigint NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE` with an index. The legacy `subject` text field now stores the selected Subject slug for new imports.
+- The question loader groups MCQs by `subject_id` first, not by matching subject names. This prevents questions imported into one Subject from appearing in another.
+- `study_admin_clear_all_questions(token, confirmation)` clears all MCQs across all Subjects, but leaves the Subject rows in place. The exact confirmation text is `DELETE ALL QUESTIONS`.
+- `study_admin_clear_subject_questions(token, subject_slug, confirmation)` clears every MCQ in one Subject while leaving that Subject and its Chapters/Notes in place.
+- `study_admin_delete_subject(token, subject_slug, confirmation)` deletes the selected Subject, its MCQs, Chapters, and Theory Notes. Performance sessions keep their saved data and their subject_id is set to NULL.
+- Every destructive RPC validates the four-hour Admin token and requires explicit confirmation. The Admin UI prompts for the exact Subject slug before deleting a Subject or clearing one Subject.
+
+All 13 existing MCQ rows were deleted across the six Subjects as requested. Subject rows were retained. Foreign-key cascades removed the linked `bookmarks`, `question_attempts`, and `mock_test_questions` rows. The existing Theory Notes and Performance session data were preserved. The MCQ `subject_id` column is required for future question inserts.
+
 ## Existing schema changes already applied
 
 - Added nullable owner_id columns to public.subjects and public.mcq_questions.
