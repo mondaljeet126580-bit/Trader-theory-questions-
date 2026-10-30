@@ -37,6 +37,27 @@
     return all;
   }
 
+  async function fetchOwnedHistory(table, columns, userId, orderColumn) {
+    const pageSize = 500;
+    let start = 0;
+    const all = [];
+    while (true) {
+      const response = await client()
+        .from(table)
+        .select(columns)
+        .eq("user_id", userId)
+        .order(orderColumn, { ascending: false })
+        .range(start, start + pageSize - 1);
+
+      if (response.error) throw response.error;
+      const rows = response.data || [];
+      all.push.apply(all, rows);
+      if (rows.length < pageSize) break;
+      start += pageSize;
+    }
+    return all;
+  }
+
   function subjectLabel(subject) {
     return subject.name_bn || subject.name_en || subject.slug;
   }
@@ -247,27 +268,26 @@
     return response.data;
   }
 
-  async function listPerformance(limit) {
+  async function listPerformance() {
     const user = await requireUser();
     const [sessions, legacy] = await Promise.all([
-      client().from("study_practice_sessions")
-        .select("id,subject_name,mode,total_questions,correct_count,wrong_count,unanswered_count,score,duration_seconds,started_at,submitted_at,answers")
-        .eq("user_id", user.id)
-        .order("submitted_at", { ascending: false })
-        .limit(limit || 50),
-      client().from("question_attempts")
-        .select("id,question_id,selected_answer,is_correct,context_type,attempted_at")
-        .eq("user_id", user.id)
-        .order("attempted_at", { ascending: false })
-        .limit(50)
+      fetchOwnedHistory(
+        "study_practice_sessions",
+        "id,subject_name,mode,total_questions,correct_count,wrong_count,unanswered_count,score,duration_seconds,started_at,submitted_at,answers",
+        user.id,
+        "submitted_at"
+      ),
+      fetchOwnedHistory(
+        "question_attempts",
+        "id,question_id,selected_answer,is_correct,context_type,attempted_at",
+        user.id,
+        "attempted_at"
+      )
     ]);
 
-    if (sessions.error) throw sessions.error;
-    if (legacy.error) throw legacy.error;
-
     return {
-      sessions: sessions.data || [],
-      questionAttempts: legacy.data || []
+      sessions: sessions,
+      questionAttempts: legacy
     };
   }
 
