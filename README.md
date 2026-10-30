@@ -38,8 +38,12 @@ The token is sent with Admin-only RPC calls. Those functions validate the token 
 - Add MCQs with 2–8 options, correct answer, and optional explanation.
 - Continue numbering from the subject's latest question.
 - Insert questions to the existing public.mcq_questions table in batches of 250.
+- Review only your own private Admin-uploaded questions in the "My Uploaded Questions" panel.
+- Delete one question or select multiple questions and permanently delete them from Supabase.
 
 New subjects and questions are saved as unpublished/private and assigned to the existing Study Admin owner. Another visitor cannot read them through normal public queries. Only a valid Admin session can fetch the private rows.
+
+Deletion is owner-checked on the server: only rows with the current Admin owner_id, source_type = admin_upload, and is_published = false can be deleted. The related bookmarks, mock-test question links, and individual question_attempts are removed by the database foreign-key cascades. Previously saved study_practice_sessions answer snapshots remain as historical test records.
 
 ## My Past Performance
 
