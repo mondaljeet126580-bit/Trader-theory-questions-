@@ -310,11 +310,32 @@
       }
 
       if (attempts.length) {
-        const older = document.createElement("div");
-        older.className = "glass-panel";
-        older.textContent = "আগের individual question attempt: " + attempts.length + "টি (সঠিক " +
-          attempts.filter(item => item.is_correct).length + "টি)।";
-        target.appendChild(older);
+        const heading = document.createElement("h3");
+        heading.textContent = "আগের Individual Question History";
+        target.appendChild(heading);
+
+        attempts.forEach(function (attempt, index) {
+          const card = document.createElement("article");
+          card.className = "performance-card";
+
+          const title = document.createElement("strong");
+          title.textContent = (index + 1) + ". Question ID " + attempt.question_id +
+            " — " + (attempt.is_correct ? "সঠিক" : "ভুল");
+          card.appendChild(title);
+
+          const detail = document.createElement("div");
+          detail.className = "perf-metrics";
+          detail.textContent = "তোমার উত্তর: " + (attempt.selected_answer || "দেওয়া হয়নি") +
+            " • Context: " + (attempt.context_type || "practice");
+          card.appendChild(detail);
+
+          const date = document.createElement("div");
+          date.className = "perf-date";
+          date.textContent = formatDate(attempt.attempted_at);
+          card.appendChild(date);
+
+          target.appendChild(card);
+        });
       }
     } catch (error) {
       console.error("Performance history could not be loaded.", error);
