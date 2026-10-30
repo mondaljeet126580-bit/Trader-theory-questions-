@@ -404,9 +404,9 @@
   async function init() {
     installEvents();
     try {
-      await WBPQuestionStore.load({}, {});
+      await WBPQuestionStore.load();
       await refreshSubjects();
-      setMessage("subject-message", "Local question store প্রস্তুত। Supabase সংযুক্ত নয়।");
+      setMessage("subject-message", "Supabase থেকে private ও published Subject লোড হয়েছে।");
     } catch (error) {
       setMessage("subject-message", "Question store চালু করা যায়নি: " + error.message, true);
       $("add-subject-btn").disabled = true;
