@@ -81,6 +81,16 @@
     return results;
   }
 
+  async function readOne(storeName, key) {
+    const db = await openDatabase();
+    const tx = db.transaction(storeName, "readonly");
+    const resultPromise = requestResult(tx.objectStore(storeName).get(key));
+    const donePromise = transactionDone(tx);
+    const result = await resultPromise;
+    await donePromise;
+    return result;
+  }
+
   async function writeSetup(subjects, questions) {
     if (!subjects.length && !questions.length) return;
     const db = await openDatabase();
@@ -222,6 +232,9 @@
     }
 
     const db = await openDatabase();
+    const subject = await readOne("subjects", key);
+    if (!subject) throw new Error("নির্বাচিত Subject পাওয়া যায়নি।");
+
     const readTx = db.transaction("questions", "readonly");
     const existingRequest = readTx.objectStore("questions").index("bySubject").getAll(key);
     const existingPromise = requestResult(existingRequest);
@@ -233,35 +246,38 @@
       return Math.max(max, Number(item.no) || 0);
     }, 0) + 1;
 
+    const firstNumber = nextNo;
+    const preparedRows = sourceQuestions.map(function (source, index) {
+      const row = normalizeQuestion(key, nextNo + index, source);
+      if (!row.bn || Object.keys(row.options).length < 2 || !row.correct || !row.options[row.correct]) {
+        throw new Error("প্রশ্ন " + (index + 1) + " সংরক্ষণের উপযোগী নয়: প্রশ্ন, অন্তত ২টি অপশন এবং সঠিক উত্তর আবশ্যক।");
+      }
+      return row;
+    });
+
     let savedCount = 0;
-    for (let offset = 0; offset < sourceQuestions.length; offset += BATCH_SIZE) {
-      const chunk = sourceQuestions.slice(offset, offset + BATCH_SIZE);
+    for (let offset = 0; offset < preparedRows.length; offset += BATCH_SIZE) {
+      const chunk = preparedRows.slice(offset, offset + BATCH_SIZE);
       const tx = db.transaction("questions", "readwrite");
       const store = tx.objectStore("questions");
-
-      chunk.forEach(function (source) {
-        const row = normalizeQuestion(key, nextNo, source);
-        if (!row.bn || Object.keys(row.options).length < 2 || !row.correct || !row.options[row.correct]) {
-          throw new Error("প্রশ্ন " + (offset + savedCount + 1) + " সংরক্ষণ করা যায়নি: প্রশ্ন, অন্তত ২টি অপশন এবং সঠিক উত্তর আবশ্যক।");
-        }
+      chunk.forEach(function (row) {
         store.add(row);
-        nextNo += 1;
         savedCount += 1;
       });
-
-      await transactionDone(tx);
+      try {
+        await transactionDone(tx);
+      } catch (error) {
+        error.savedCountBeforeFailure = savedCount - chunk.length;
+        throw error;
+      }
     }
 
+    subject.lastUpdatedAt = new Date().toISOString();
     const subjectTx = db.transaction("subjects", "readwrite");
-    const subjectStore = subjectTx.objectStore("subjects");
-    const subject = await requestResult(subjectStore.get(key));
-    if (subject) {
-      subject.lastUpdatedAt = new Date().toISOString();
-      subjectStore.put(subject);
-    }
+    subjectTx.objectStore("subjects").put(subject);
     await transactionDone(subjectTx);
 
-    return { count: savedCount, firstNumber: nextNo - savedCount, lastNumber: nextNo - 1 };
+    return { count: savedCount, firstNumber: firstNumber, lastNumber: firstNumber + savedCount - 1 };
   }
 
   async function listSubjects() {
