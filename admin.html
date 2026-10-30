@@ -59,6 +59,17 @@
     .hidden { display:none !important; }
     .format { background:#050d1b; border:1px solid #263750; border-radius:10px; padding:12px; white-space:pre-wrap; overflow:auto; color:#cbd5e1; font:12px/1.6 ui-monospace,monospace; }
     .small { font-size:11px; color:#94a3b8; line-height:1.6; }
+    .delete-toolbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:14px; padding:10px; border:1px solid #263750; border-radius:10px; background:#0b172b; }
+    .delete-select-all { display:flex; align-items:center; gap:8px; margin:0; }
+    .delete-select-all input, .delete-question-check { width:auto; display:inline-block; accent-color:#38bdf8; }
+    button.danger { background:#7f1d1d; border-color:#ef4444; color:#fff; }
+    button.danger:hover { background:#991b1b; }
+    .my-question-card { background:#0b172b; border:1px solid #263750; border-radius:10px; padding:12px; }
+    .my-question-head { display:flex; align-items:flex-start; gap:10px; }
+    .my-question-text { flex:1; min-width:0; font-size:13px; line-height:1.6; font-weight:700; }
+    .my-question-meta { color:#94a3b8; font-size:11px; margin-top:5px; }
+    .my-question-options { color:#cbd5e1; font-size:12px; line-height:1.7; margin-top:8px; white-space:pre-wrap; }
+    .my-question-actions { display:flex; justify-content:flex-end; margin-top:10px; }
     @media(max-width:620px) {
       .top, .row { align-items:stretch; flex-direction:column; }
       .row .fit { width:100%; }
@@ -166,6 +177,25 @@ Q2: ..."></textarea>
         <button id="save-btn" class="success" type="button" disabled>✓ নির্বাচিত Subject-এ প্রশ্ন সংরক্ষণ করুন</button>
       </div>
       <p class="small">শুধু validation পাস করা প্রশ্নগুলি সংরক্ষণ হবে। সংরক্ষণের পর প্রতিটি প্রশ্নের নম্বর ওই Subject-এর শেষ নম্বরের পর থেকে স্বয়ংক্রিয়ভাবে বসবে।</p>
+    </section>
+
+    <section class="panel" id="uploaded-questions-panel">
+      <div class="row" style="align-items:center;">
+        <div>
+          <h2 style="margin:0;">৫. আমার Upload করা প্রশ্ন</h2>
+          <p class="muted">নির্বাচিত Subject-এ তোমার নিজের upload করা private প্রশ্ন দেখো, একটি করে বা একসঙ্গে একাধিক Delete করো।</p>
+        </div>
+        <button id="refresh-my-questions-btn" class="fit" type="button">↻ Refresh</button>
+      </div>
+      <div id="my-questions-summary" class="small" aria-live="polite">প্রশ্ন লোড হচ্ছে...</div>
+      <div class="delete-toolbar">
+        <label class="delete-select-all" for="select-all-my-questions">
+          <input id="select-all-my-questions" type="checkbox">
+          সব প্রশ্ন নির্বাচন
+        </label>
+        <button id="delete-selected-questions-btn" class="danger fit" type="button" disabled>🗑️ Selected Delete (0)</button>
+      </div>
+      <div id="my-questions-list" class="preview-list"></div>
     </section>
 
     <section class="panel">
