@@ -10,8 +10,12 @@
   }
 
   function adminToken() {
-    try { return global.sessionStorage.getItem(TOKEN_KEY) || ""; }
+    try { return global.localStorage.getItem(TOKEN_KEY) || ""; }
     catch (_) { return ""; }
+  }
+
+  function removeAdminToken() {
+    try { global.localStorage.removeItem(TOKEN_KEY); } catch (_) {}
   }
 
   async function fetchAll(table, columns, orderColumn, publishedOnly) {
@@ -98,8 +102,22 @@
       const privateResult = await client().rpc("study_admin_load_content", {
         p_token: token
       });
-      if (!privateResult.error && privateResult.data) return normalizeRows(privateResult.data);
-      try { global.sessionStorage.removeItem(TOKEN_KEY); } catch (_) {}
+
+      if (!privateResult.error && privateResult.data) {
+        return normalizeRows(privateResult.data);
+      }
+
+      const errorMessage = privateResult.error && privateResult.error.message
+        ? privateResult.error.message
+        : "Admin private data response is empty.";
+
+      if (/session expired|invalid.*session|admin session/i.test(errorMessage)) {
+        removeAdminToken();
+        // A genuinely expired/revoked token falls back to published Guest data.
+      } else {
+        // Do not silently hide private subjects when there is a network or RPC error.
+        throw new Error("Private Subject load failed: " + errorMessage);
+      }
     }
 
     const [subjects, questions] = await Promise.all([
