@@ -414,5 +414,6 @@
     }
   }
 
+  window.WBPAdminParser = Object.freeze({ parseBulkInput: parseBulkInput });
   document.addEventListener("DOMContentLoaded", init);
 })();
