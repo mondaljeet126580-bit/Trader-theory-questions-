@@ -489,19 +489,16 @@
     });
     $("refresh-my-questions-btn").addEventListener("click", refreshMyQuestions);
     $("select-all-my-questions").addEventListener("change", function () {
+      const shouldSelect = this.checked;
       selectedQuestionIds.clear();
-      if (this.checked) {
-        uploadedQuestions.forEach(function (question) {
-          selectedQuestionIds.add(String(question.id));
-        });
-      }
-      renderMyQuestions();
-      if (this.checked) {
-        uploadedQuestions.forEach(function (question) {
-          selectedQuestionIds.add(String(question.id));
-        });
-        updateDeleteControls();
-      }
+      const checkboxes = $("my-questions-list").querySelectorAll(".delete-question-check");
+      checkboxes.forEach(function (checkbox, index) {
+        checkbox.checked = shouldSelect;
+        if (shouldSelect && uploadedQuestions[index]) {
+          selectedQuestionIds.add(String(uploadedQuestions[index].id));
+        }
+      });
+      updateDeleteControls();
     });
     $("delete-selected-questions-btn").addEventListener("click", function () {
       deleteMyQuestions(Array.from(selectedQuestionIds));
