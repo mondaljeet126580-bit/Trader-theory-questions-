@@ -119,9 +119,19 @@
   };
 
   App.init = async function () {
-    this.loadLocalStorageBuffers();
     try {
+      // Load Supabase subjects/questions first so saved subject preferences
+      // can be restored against the real current subject list.
       await this.refreshQuestionData({ initial: true });
+      this.loadLocalStorageBuffers();
+
+      const keys = Object.keys(questionsDatabase);
+      if (!keys.includes(this.currentSubject)) this.currentSubject = keys[0] || "";
+
+      const searchInput = $("subject-search-input");
+      this.renderSubjectTabs(searchInput ? searchInput.value : "");
+      this.syncMaxBounds();
+      this.updateGeminiFloatingBar();
       this.goHome();
     } catch (error) {
       console.error("Initial question load failed.", error);
