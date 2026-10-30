@@ -53,7 +53,7 @@
   }
 
   function isQuestionStart(line) {
-    return /^(?:(?:Q|Question)\s*(?:No\.?\s*)?#?\s*\d*\s*[:.)-]|প্রশ্ন\s*(?:নং\s*)?\d*\s*[:.)-]|\d+\s*[.)])\s*/i.test(line.trim());
+    return /^(?:(?:Q|Question)\s*(?:No\.?\s*)?#?\s*[0-9০-৯]*\s*[:.)-]|প্রশ্ন\s*(?:নং\s*)?[0-9০-৯]*\s*[:.)-]|[0-9০-৯]+\s*[.)])\s*/i.test(line.trim());
   }
 
   function isAnswerLine(line) {
@@ -145,7 +145,7 @@
 
       let questionLine = line;
       if (lineIndex === 0) {
-        questionLine = line.replace(/^(?:(?:Q|Question)\s*(?:No\.?\s*)?#?\s*\d*|প্রশ্ন\s*(?:নং\s*)?\d*|\d+)\s*[:.)-]?\s*/i, "");
+        questionLine = line.replace(/^(?:(?:Q|Question)\s*(?:No\.?\s*)?#?\s*[0-9০-৯]*|প্রশ্ন\s*(?:নং\s*)?[0-9০-৯]*|[0-9০-৯]+)\s*[:.)-]?\s*/i, "");
       }
       questionParts.push(questionLine);
     });
