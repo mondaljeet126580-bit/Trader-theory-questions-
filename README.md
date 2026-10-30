@@ -43,6 +43,8 @@ The token is sent with Admin-only RPC calls. Those functions validate the token 
 
 New subjects and questions are saved as unpublished/private and assigned to the existing Study Admin owner. Another visitor cannot read them through normal public queries. Only a valid Admin session can fetch the private rows.
 
+The four original bundled public starter subjects are also seeded in Supabase: General Science, WBP/KP GK & Current Affairs, Mathematics, and Reasoning & General Intelligence. This keeps the original subject selector populated instead of showing only the first subject row.
+
 Deletion is owner-checked on the server: only rows with the current Admin owner_id, source_type = admin_upload, and is_published = false can be deleted. The related bookmarks, mock-test question links, and individual question_attempts are removed by the database foreign-key cascades. Previously saved study_practice_sessions answer snapshots remain as historical test records.
 
 ## My Past Performance
