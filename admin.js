@@ -391,6 +391,108 @@
     }
   }
 
+  function updateManagementSubjectLabel() {
+    const select = $("subject-select");
+    const option = select.options[select.selectedIndex];
+    const slug = select.value;
+    $("management-subject-name").textContent = option && slug
+      ? option.textContent + "  •  slug: " + slug
+      : "উপরের Subject নির্বাচন করুন।";
+    $("clear-subject-questions-btn").disabled = !slug;
+    $("delete-subject-btn").disabled = !slug;
+  }
+
+  async function clearSelectedSubjectQuestions() {
+    const subjectKey = $("subject-select").value;
+    const subject = $("subject-select").options[$("subject-select").selectedIndex];
+    if (!subjectKey || !subject) return;
+
+    const typed = window.prompt(
+      "এই Subject-এর সব প্রশ্ন Supabase থেকে স্থায়ীভাবে মুছতে চাইলে এই slug-টি হুবহু লিখুন:\n\n" + subjectKey
+    );
+    if (typed === null) return;
+    if (typed.trim() !== subjectKey) {
+      setMessage("database-management-status", "Subject slug মেলেনি। কোনো প্রশ্ন মুছিনি।", true);
+      return;
+    }
+
+    const button = $("clear-subject-questions-btn");
+    button.disabled = true;
+    button.textContent = "মুছে ফেলা হচ্ছে...";
+    try {
+      const result = await WBPQuestionStore.clearSubjectQuestions(subjectKey);
+      setMessage("database-management-status",
+        (result.deletedCount || 0) + "টি প্রশ্ন " + subject.name + " থেকে Supabase-এ স্থায়ীভাবে মুছে গেছে।");
+      await refreshSubjectCount();
+      await refreshMyQuestions();
+    } catch (error) {
+      setMessage("database-management-status", "প্রশ্ন মুছতে পারিনি: " + error.message, true);
+    } finally {
+      button.textContent = "🗑️ এই Subject-এর সব প্রশ্ন মুছুন";
+      updateManagementSubjectLabel();
+    }
+  }
+
+  async function deleteSelectedSubject() {
+    const subjectKey = $("subject-select").value;
+    const subject = $("subject-select").options[$("subject-select").selectedIndex];
+    if (!subjectKey || !subject) return;
+
+    const typed = window.prompt(
+      "এই Subject, এর সব প্রশ্ন, Chapters ও Theory Notes স্থায়ীভাবে Delete করতে চাইলে slug-টি হুবহু লিখুন:\n\n" + subjectKey
+    );
+    if (typed === null) return;
+    if (typed.trim() !== subjectKey) {
+      setMessage("database-management-status", "Subject slug মেলেনি। কিছু Delete করিনি।", true);
+      return;
+    }
+
+    const button = $("delete-subject-btn");
+    button.disabled = true;
+    button.textContent = "Subject Delete হচ্ছে...";
+    try {
+      const result = await WBPQuestionStore.deleteSubject(subjectKey);
+      setMessage("database-management-status",
+        result.deletedName + " Subject Delete হয়েছে; " + result.deletedQuestions +
+        "টি প্রশ্নও মুছে গেছে।");
+      await refreshSubjects();
+      updateManagementSubjectLabel();
+    } catch (error) {
+      setMessage("database-management-status", "Subject Delete হয়নি: " + error.message, true);
+    } finally {
+      button.textContent = "✖ এই Subject-সহ তার Data Delete";
+      updateManagementSubjectLabel();
+    }
+  }
+
+  async function clearAllSubjectQuestions() {
+    const typed = window.prompt(
+      "সতর্কতা: Supabase-এর সব Subject-এর সব MCQ স্থায়ীভাবে Delete হবে।\nSubject ও Theory Notes থাকবে।\n\nচালিয়ে যেতে DELETE ALL QUESTIONS লিখুন:"
+    );
+    if (typed === null) return;
+    if (typed.trim() !== "DELETE ALL QUESTIONS") {
+      setMessage("database-management-status", "Confirmation মেলেনি। কোনো প্রশ্ন মুছিনি।", true);
+      return;
+    }
+
+    const button = $("clear-all-questions-btn");
+    button.disabled = true;
+    button.textContent = "সব প্রশ্ন মুছে ফেলা হচ্ছে...";
+    try {
+      const result = await WBPQuestionStore.clearAllQuestions();
+      setMessage("database-management-status",
+        result.deletedCount + "টি প্রশ্ন সব Subject থেকে Supabase-এ স্থায়ীভাবে মুছে গেছে। Subject-গুলো রাখা হয়েছে।");
+      await refreshSubjectCount();
+      await refreshMyQuestions();
+    } catch (error) {
+      setMessage("database-management-status", "সব প্রশ্ন মুছতে পারিনি: " + error.message, true);
+    } finally {
+      button.disabled = false;
+      button.textContent = "⚠️ ALL SUBJECTS — DELETE ALL QUESTIONS";
+      updateManagementSubjectLabel();
+    }
+  }
+
   function renderPreview(parsed) {
     lastValidQuestions = parsed.valid;
     lastErrors = parsed.errors;
@@ -494,8 +596,12 @@
     $("subject-select").addEventListener("change", function () {
       refreshSubjectCount();
       refreshMyQuestions();
+      updateManagementSubjectLabel();
       $("save-btn").disabled = !lastValidQuestions.length;
     });
+    $("clear-subject-questions-btn").addEventListener("click", clearSelectedSubjectQuestions);
+    $("delete-subject-btn").addEventListener("click", deleteSelectedSubject);
+    $("clear-all-questions-btn").addEventListener("click", clearAllSubjectQuestions);
     $("refresh-my-questions-btn").addEventListener("click", refreshMyQuestions);
     $("select-all-my-questions").addEventListener("change", function () {
       const shouldSelect = this.checked;
@@ -574,6 +680,7 @@
     try {
       await WBPQuestionStore.load();
       await refreshSubjects();
+      updateManagementSubjectLabel();
       setMessage("subject-message", "Supabase থেকে private ও published Subject লোড হয়েছে।");
     } catch (error) {
       setMessage("subject-message", "Question store চালু করা যায়নি: " + error.message, true);
