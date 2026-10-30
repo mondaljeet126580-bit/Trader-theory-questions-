@@ -38,10 +38,7 @@
       // Keep only the short-lived server token (never the passcode) so the
       // main app can read private questions after same-browser navigation.
       localStorage.setItem(TOKEN_KEY, token);
-      try {
-      localStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(TOKEN_KEY);
-    } catch (_) {}
+      try { sessionStorage.removeItem(TOKEN_KEY); } catch (_) {}
       $("admin-passcode").value = "";
       $("admin-login-panel").classList.add("hidden");
       $("admin-workspace").classList.remove("hidden");
@@ -75,7 +72,10 @@
       }
     }
 
-    try { sessionStorage.removeItem(TOKEN_KEY); } catch (_) {}
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+    } catch (_) {}
     workspaceOpened = false;
     $("admin-workspace").classList.add("hidden");
     $("admin-login-panel").classList.remove("hidden");
