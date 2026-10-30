@@ -2,99 +2,14 @@
   "use strict";
 
   const $ = function (id) { return document.getElementById(id); };
-  const supabase = function () { return window.supabaseClient; };
+  const TOKEN_KEY = "study_admin_session_token";
 
   App.currentUser = null;
   App.subjectIds = {};
   App.mockStartedAt = null;
   App.performanceSaving = false;
 
-  function authMessage(text, isError) {
-    const node = $("auth-message");
-    node.textContent = text || "";
-    node.style.color = isError ? "#fca5a5" : "#86efac";
-  }
-
-  function showAuthGate(message) {
-    $("auth-gate").classList.remove("hidden");
-    $("auth-gate").style.display = "block";
-    $("auth-password").value = "";
-    $("app-session-bar").classList.add("hidden");
-    document.querySelector(".app-container").classList.add("hidden");
-    if (message) authMessage(message, false);
-  }
-
-  async function verifyCurrentUser() {
-    const result = await supabase().auth.getUser();
-    if (result.error) throw result.error;
-    if (!result.data.user) throw new Error("তোমার Supabase session পাওয়া যায়নি।");
-    return result.data.user;
-  }
-
   App.init = async function () {
-    $("auth-login-btn").addEventListener("click", () => this.signIn());
-    $("app-logout-btn").addEventListener("click", () => this.signOut());
-
-    ["auth-email", "auth-password"].forEach(id => {
-      $(id).addEventListener("keydown", event => {
-        if (event.key === "Enter") this.signIn();
-      });
-    });
-
-    try {
-      const sessionResult = await supabase().auth.getSession();
-      if (sessionResult.error) throw sessionResult.error;
-      if (!sessionResult.data.session) {
-        showAuthGate("তোমার আগে থেকে থাকা Supabase User বা Admin account দিয়ে Sign in করো।");
-        return;
-      }
-
-      const user = await verifyCurrentUser();
-      await this.loadForSignedInUser(user);
-    } catch (error) {
-      console.error("Supabase authentication initialization failed.", error);
-      showAuthGate("Supabase সংযোগ বা login যাচাই হয়নি: " + (error.message || String(error)));
-    }
-  };
-
-  App.signIn = async function () {
-    const button = $("auth-login-btn");
-    const email = $("auth-email").value.trim();
-    const password = $("auth-password").value;
-    if (!email || !password) {
-      authMessage("Email এবং password লিখুন।", true);
-      return;
-    }
-
-    button.disabled = true;
-    button.textContent = "Sign in হচ্ছে...";
-    try {
-      const response = await supabase().auth.signInWithPassword({
-        email: email,
-        password: password
-      });
-      if (response.error) throw response.error;
-      const user = await verifyCurrentUser();
-      await this.loadForSignedInUser(user);
-    } catch (error) {
-      authMessage("Sign in ব্যর্থ: " + (error.message || String(error)), true);
-    } finally {
-      button.disabled = false;
-      button.textContent = "Sign in";
-    }
-  };
-
-  App.signOut = async function () {
-    const response = await supabase().auth.signOut();
-    if (response.error) {
-      authMessage("Sign out করা যায়নি: " + response.error.message, true);
-      return;
-    }
-    this.currentUser = null;
-    showAuthGate("Sign out হয়েছে।");
-  };
-
-  App.loadForSignedInUser = async function (user) {
     try {
       const data = await window.WBPQuestionStore.load();
       Object.keys(questionsDatabase).forEach(key => delete questionsDatabase[key]);
@@ -113,13 +28,6 @@
       this.configRange.to = (questionsDatabase[this.currentSubject] || []).length || 1;
       this.configRange.specialFilter = null;
 
-      this.currentUser = user;
-      $("app-user-email").textContent = "Signed in: " + (user.email || "Supabase user");
-      $("app-session-bar").classList.remove("hidden");
-      $("auth-gate").classList.add("hidden");
-      document.querySelector(".app-container").classList.remove("hidden");
-      authMessage("", false);
-
       this.loadLocalStorageBuffers();
       if (!keys.includes(this.currentSubject)) this.currentSubject = keys[0] || "";
       this.renderSubjectTabs();
@@ -127,12 +35,23 @@
       this.updateGeminiFloatingBar();
       this.goHome();
 
+      const unlocked = !!sessionStorage.getItem(TOKEN_KEY);
+      const count = keys.reduce((sum, key) => sum + (questionsDatabase[key] || []).length, 0);
+      const countNode = $("telemetry-total-count");
+      if (countNode) countNode.textContent = count.toLocaleString("en-IN");
+
+      const status = $("app-data-status");
+      if (status) status.textContent = unlocked
+        ? "Admin unlock active — তোমার private ও published প্রশ্ন লোড হয়েছে।"
+        : "Guest mode — published প্রশ্ন দেখা যাচ্ছে। তোমার private প্রশ্ন দেখতে Admin Panel unlock করো।";
+
       if (!keys.length) {
-        $("subject-tabs-container").textContent = "এখনও কোনো visible Subject নেই। Admin Panel থেকে private Subject তৈরি করুন।";
+        const node = $("subject-tabs-container");
+        if (node) node.textContent = "এখনও কোনো published Subject নেই।";
       }
     } catch (error) {
-      console.error("Supabase data load failed.", error);
-      showAuthGate("Database থেকে প্রশ্ন লোড হয়নি: " + (error.message || String(error)));
+      console.error("Question data could not be loaded.", error);
+      alert("Supabase থেকে প্রশ্ন লোড করা যায়নি: " + (error.message || String(error)));
     }
   };
 
@@ -141,7 +60,8 @@
     originalStartMockMode.call(this);
     if (!$("mock-view").classList.contains("hidden")) {
       this.mockStartedAt = new Date().toISOString();
-      $("performance-save-status").textContent = "";
+      const status = $("performance-save-status");
+      if (status) status.textContent = "";
     }
   };
 
@@ -184,7 +104,8 @@
     this.performanceSaving = true;
     originalSubmitMock.call(this);
 
-    $("performance-save-status").textContent = "এই Mock Test-এর ফলাফল Supabase-এ সংরক্ষণ হচ্ছে...";
+    const status = $("performance-save-status");
+    if (status) status.textContent = "Performance history সংরক্ষণ হচ্ছে...";
     try {
       await window.WBPQuestionStore.savePerformance({
         subjectKey: this.currentSubject,
@@ -199,11 +120,13 @@
         startedAt: startedAt,
         answers: answers
       });
-      $("performance-save-status").textContent = "✓ তোমার Past Performance Supabase-এ সংরক্ষিত হয়েছে।";
+
+      if (status) status.textContent = sessionStorage.getItem(TOKEN_KEY)
+        ? "✓ তোমার Performance Supabase-এ private ভাবে সংরক্ষিত হয়েছে।"
+        : "✓ তোমার Performance এই browser-এ সংরক্ষিত হয়েছে। Admin unlock করলে cloud history-ও ব্যবহার হবে।";
     } catch (error) {
-      console.error("Could not save practice performance.", error);
-      $("performance-save-status").textContent =
-        "ফলাফল এইবার cloud history-তে সংরক্ষণ করা যায়নি: " + (error.message || String(error));
+      console.error("Performance history could not be saved.", error);
+      if (status) status.textContent = "Performance save হয়নি: " + (error.message || String(error));
     } finally {
       this.performanceSaving = false;
       this.mockStartedAt = null;
@@ -260,10 +183,10 @@
     (Array.isArray(session.answers) ? session.answers : []).forEach(function (answer, answerIndex) {
       const row = document.createElement("div");
       row.className = "performance-answer";
-      const status = answer.is_correct ? "সঠিক" : (answer.selected_answer ? "ভুল" : "স্কিপ");
+      const result = answer.is_correct ? "সঠিক" : (answer.selected_answer ? "ভুল" : "স্কিপ");
       row.textContent = (answerIndex + 1) + ". " + (answer.question_bn || ("প্রশ্ন " + answer.question_no)) +
         " | তোমার উত্তর: " + (answer.selected_answer || "দেওয়া হয়নি") +
-        " | সঠিক উত্তর: " + (answer.correct_answer || "—") + " | " + status;
+        " | সঠিক উত্তর: " + (answer.correct_answer || "—") + " | " + result;
       card.appendChild(row);
     });
 
@@ -273,10 +196,9 @@
   App.showPerformance = async function () {
     this.switchView("performance-view");
     $("performance-list").textContent = "তোমার history লোড হচ্ছে...";
-    $("perf-legacy-note").textContent = "";
 
     try {
-      const result = await window.WBPQuestionStore.listPerformance(100);
+      const result = await window.WBPQuestionStore.listPerformance();
       const sessions = result.sessions || [];
       const attempts = result.questionAttempts || [];
       const average = sessions.length
@@ -292,16 +214,20 @@
       summary.appendChild(makeStat(average.toFixed(1) + "%", "গড় নম্বর"));
       summary.appendChild(makeStat(best.toFixed(1) + "%", "সেরা নম্বর"));
 
-      $("perf-legacy-note").textContent = attempts.length
-        ? "আগের question_attempts history-তে " + attempts.length + "টি individual answer record পাওয়া গেছে। নতুন test এখন থেকে পূর্ণ session হিসেবে সংরক্ষিত হবে।"
-        : "এখনও পুরোনো individual answer record নেই।";
-
       const target = $("performance-list");
       target.innerHTML = "";
-      if (!sessions.length) {
+      const historyMode = sessionStorage.getItem(TOKEN_KEY)
+        ? "Supabase private history"
+        : "এই browser-এর local history";
+      const modeNote = document.createElement("div");
+      modeNote.className = "muted";
+      modeNote.textContent = "History source: " + historyMode;
+      target.appendChild(modeNote);
+
+      if (!sessions.length && !attempts.length) {
         const empty = document.createElement("div");
         empty.className = "glass-panel";
-        empty.textContent = "এখনও কোনো Mock Test Supabase history-তে জমা হয়নি। নতুন Mock Test জমা দিলে তার ফলাফল এখানে দেখা যাবে।";
+        empty.textContent = "এখনও কোনো Test জমা হয়নি। নতুন Mock Test জমা দিলে তার ফলাফল এখানে দেখা যাবে।";
         target.appendChild(empty);
       } else {
         sessions.forEach(function (session, index) {
@@ -333,7 +259,6 @@
           date.className = "perf-date";
           date.textContent = formatDate(attempt.attempted_at);
           card.appendChild(date);
-
           target.appendChild(card);
         });
       }
