@@ -235,6 +235,7 @@
 
     await refreshSubjectCount();
     await refreshMyQuestions();
+    updateManagementSubjectLabel();
     return subjects;
   }
 
