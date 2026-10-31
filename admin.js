@@ -582,11 +582,96 @@
     }
   }
 
+  let pdfJsPromise = null;
+
+  async function getPdfJs() {
+    if (window.pdfjsLib && typeof window.pdfjsLib.getDocument === "function") {
+      return window.pdfjsLib;
+    }
+
+    if (!pdfJsPromise) {
+      pdfJsPromise = import("https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/build/pdf.mjs")
+        .then(function (library) {
+          library.GlobalWorkerOptions.workerSrc =
+            "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/build/pdf.worker.mjs";
+          window.pdfjsLib = library;
+          return library;
+        })
+        .catch(function (error) {
+          pdfJsPromise = null;
+          throw new Error("PDF reader লোড হয়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন। " + error.message);
+        });
+    }
+
+    return pdfJsPromise;
+  }
+
+  async function extractPdfText(file) {
+    const pdfjs = await getPdfJs();
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const loadingTask = pdfjs.getDocument({ data: bytes });
+    const pdf = await loadingTask.promise;
+    const pageTexts = [];
+
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      let currentLine = "";
+      const lines = [];
+
+      (content.items || []).forEach(function (item) {
+        if (!item || typeof item.str !== "string") return;
+        const value = item.str.trim();
+        if (value) currentLine += (currentLine ? " " : "") + value;
+
+        if (item.hasEOL) {
+          if (currentLine.trim()) lines.push(currentLine.trim());
+          currentLine = "";
+        }
+      });
+
+      if (currentLine.trim()) lines.push(currentLine.trim());
+      page.cleanup();
+      pageTexts.push(lines.join("\n"));
+    }
+
+    await loadingTask.destroy();
+
+    let lines = pageTexts.join("\n\n").split(/\r?\n/);
+
+    // Remove document title/instructions before the first numbered question.
+    const firstQuestion = lines.findIndex(function (line) {
+      return isQuestionStart(line.trim());
+    });
+    if (firstQuestion >= 0) lines = lines.slice(firstQuestion);
+
+    // Ignore a simple trailing document footer; it is not a question.
+    lines = lines.filter(function (line) {
+      return !/^\s*(?:End of Biology MCQ Set|Total Questions\s*:?\s*30)\b/i.test(line);
+    });
+
+    const extracted = lines.join("\n").trim();
+    if (!extracted || !isQuestionStart(extracted.split(/\r?\n/)[0].trim())) {
+      throw new Error("PDF থেকে Q1, Q2-এর মতো নম্বরযুক্ত প্রশ্ন পাওয়া যায়নি। Text-based PDF ব্যবহার করুন; scanned/photo PDF সরাসরি পড়া যাবে না।");
+    }
+
+    return extracted;
+  }
+
   async function readSelectedFile(file) {
     if (!file) return;
     try {
-      $("bulk-text").value = await file.text();
-      renderPreview(parseBulkInput($("bulk-text").value));
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name || "");
+      const text = isPdf ? await extractPdfText(file) : await file.text();
+      $("bulk-text").value = text;
+      const parsed = parseBulkInput(text);
+      renderPreview(parsed);
+
+      if (isPdf) {
+        setMessage("subject-message",
+          "PDF থেকে " + parsed.valid.length + "টি সঠিক প্রশ্ন পাওয়া গেছে। Save করার আগে Preview ও Error যাচাই করুন।",
+          parsed.errors.length > 0);
+      }
     } catch (error) {
       setMessage("subject-message", "ফাইল পড়া যায়নি: " + error.message, true);
     }
