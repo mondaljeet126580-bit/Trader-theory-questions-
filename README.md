@@ -35,6 +35,7 @@ The token is sent with Admin-only RPC calls. Those functions validate the token 
 - Paste many question blocks at once.
 - Import TXT or JSON files.
 - Preview and validate questions before saving.
+- Import text-based, selectable PDF files as well as TXT/JSON files. PDF text is extracted in the browser with Mozilla PDF.js; scanned/image-only PDFs are not OCR-processed.
 - Add MCQs with 2–8 options, correct answer, and optional explanation.
 - Continue numbering from the subject's latest question.
 - Insert questions to the existing public.mcq_questions table in batches of 250, linked by a required subject_id foreign key.
