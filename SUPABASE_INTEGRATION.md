@@ -44,11 +44,29 @@ The session helper is located in app_private, not an exposed schema. Direct acce
 
 ## Performance history
 
-- Guest mode: local-only history in the current browser's localStorage; no account login is requested.
-- Admin-unlocked tab: Supabase history is saved/fetched under the existing Study Admin owner.
-- Existing rows in public.question_attempts for the Admin owner are included in the history display.
+- Every newly submitted User App Mock Test is stored in `public.study_mock_test_history` under a SHA-256 hash of a random 256-bit per-browser device key.
+- The User App's My Performance page reads all pages of that browser's history and shows score, correct/wrong/skipped counts, duration, date, subject, and answer snapshot.
+- Legacy Guest sessions in `study_local_performance_v1` are migrated to Supabase when My Performance is opened, provided the browser still has the local data and the answer snapshot is valid.
+- Each browser has its own device key; different devices are not automatically merged.
+- The User App can display/copy the device key as "Copy My MCP Performance Key". Keep this 64-hex-character key private.
+- Admin can list all devices' Mock Test history using a valid Admin passcode session and permanently delete selected history rows. Delete also removes the answer snapshot from the history table.
+- Direct SELECT/INSERT/DELETE on `study_mock_test_history` is revoked from anon/authenticated and an explicit deny-all RLS policy is enabled. Data access occurs through checked RPC functions only.
 
-Local Guest history does not automatically sync to other browsers/devices. Cloud history is available when the Admin Panel has been unlocked in that tab.
+## Read-only MCP Server
+
+Deployed Supabase Edge Function:
+
+`https://mtrnkalszadyzmanyxvx.supabase.co/functions/v1/exam-prep-mcp`
+
+The MCP server uses only the Supabase publishable/anon key and exposes six read-only tools:
+- `list_subjects`
+- `get_questions`
+- `search_questions`
+- `get_question`
+- `get_my_mock_test_history` (requires the device key from User App → My Performance)
+- `get_my_mock_test_summary` (same device key; full aggregate query)
+
+No MCP tool can insert, update, delete, rename, publish, or modify Supabase data. Question/subject tools can read only published content. Performance access is restricted to records matching the supplied device-key hash.
 
 ## Original bundled subject data restored
 
