@@ -403,6 +403,43 @@
     $("delete-subject-btn").disabled = !slug;
   }
 
+  async function renameSelectedSubject() {
+    const subjectSlug = $("subject-select").value;
+    const newName = $("rename-subject-name").value.trim();
+
+    if (!subjectSlug) {
+      setMessage("database-management-status", "প্রথমে একটি Subject নির্বাচন করুন।", true);
+      return;
+    }
+    if (!newName) {
+      setMessage("database-management-status", "নতুন Subject-এর নাম লিখুন।", true);
+      return;
+    }
+
+    const current = $("subject-select").options[$("subject-select").selectedIndex];
+    if (!window.confirm(
+      "‘" + (current ? current.textContent : subjectSlug) +
+      "’ Subject-এর নাম ‘" + newName + "’ করতে চাও? এর Question mapping ও slug বদলাবে না।"
+    )) return;
+
+    const button = $("rename-subject-btn");
+    button.disabled = true;
+    button.textContent = "Rename হচ্ছে...";
+    try {
+      const result = await WBPQuestionStore.renameSubject(subjectSlug, newName);
+      await refreshSubjects(subjectSlug);
+      $("rename-subject-name").value = "";
+      setMessage("database-management-status",
+        "Subject-এর নাম পরিবর্তন হয়েছে: " + result.old_name + " → " + result.new_name);
+    } catch (error) {
+      setMessage("database-management-status", "Subject rename হয়নি: " + error.message, true);
+    } finally {
+      button.disabled = false;
+      button.textContent = "✎ Rename Subject";
+      updateManagementSubjectLabel();
+    }
+  }
+
   async function clearSelectedSubjectQuestions() {
     const subjectKey = $("subject-select").value;
     const subject = $("subject-select").options[$("subject-select").selectedIndex];
@@ -685,6 +722,7 @@
       updateManagementSubjectLabel();
       $("save-btn").disabled = !lastValidQuestions.length;
     });
+    $("rename-subject-btn").addEventListener("click", renameSelectedSubject);
     $("clear-subject-questions-btn").addEventListener("click", clearSelectedSubjectQuestions);
     $("delete-subject-btn").addEventListener("click", deleteSelectedSubject);
     $("clear-all-questions-btn").addEventListener("click", clearAllSubjectQuestions);
