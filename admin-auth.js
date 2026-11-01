@@ -4,7 +4,7 @@
   const TOKEN_KEY = "study_admin_session_token";
   const $ = function (id) { return document.getElementById(id); };
   let workspaceOpened = false;
-  const USER_APP_URL = "https://mondaljeet126580-bit.github.io/Trader-theory-questions/";
+  const USER_APP_URL = "https://mondaljeet126580-bit.github.io/Trader-theory-questions-/";
 
   function setUserAppLink(token) {
     const link = $("open-user-app-link");
