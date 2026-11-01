@@ -8,14 +8,14 @@ This integration uses only the Supabase project named Trader-theory-questions- (
 
 The main app no longer displays a Supabase email/password login form. It opens in Guest mode and reads only published rows through the existing RLS policies. It refreshes the question bank on `pageshow`, window focus, document visibility return, and Admin-session storage changes. This ensures question additions/deletions and subject changes appear when returning from the Admin Panel.
 
-The Admin Panel is no longer linked or hosted by the public User App. It is distributed as a local ZIP. On unlock, it creates a temporary token. When the user taps the **Open Exam Prep User App** link, the token is passed in a URL fragment to the hosted User App, which stores it in its own localStorage and immediately removes the token from the address bar. The token expires server-side after four hours and is removed/revoked by the Admin Lock action.
+The Admin Panel is no longer linked or hosted by the public User App. It is distributed as one standalone local HTML file kept on the owner's phone. On unlock, it creates a temporary token. When the user taps the **Open Exam Prep User App** link, the token is passed in a URL fragment to the hosted User App, which stores it in its own localStorage and immediately removes the token from the address bar. The token expires server-side after four hours and is removed/revoked by the Admin Lock action.
 
 ## Admin access and token flow
 
-1. The local Admin ZIP has one passcode field only. No account email or Supabase account password is requested.
+1. The local Admin HTML has one passcode field only. No account email or Supabase account password is requested.
 2. The local browser calls public.unlock_study_admin(p_passcode).
 3. The database checks the passcode against the salted iterative hash held in the non-exposed app_private.study_admin_passcode table.
-4. On success, a high-entropy random token is created. Only its SHA-256 hash is stored in app_private.study_admin_sessions. The browser receives the raw token and stores it in localStorage (the passcode itself is never stored).
+4. On success, a high-entropy random token is created. Only its SHA-256 hash is stored in app_private.study_admin_sessions. The local Admin HTML keeps the raw token only in page memory. Its Open User App link passes the temporary token in the URL fragment; the User App stores it in its own site localStorage and immediately clears the fragment. The passcode itself is never stored.
 5. The token expires after four hours. Each Admin RPC validates the hash and expiry. The token is not stored in GitHub or included in source code.
 6. Five failed passcode attempts from the same observed source/IP + user-agent fingerprint cause a 15-minute lockout.
 7. The Admin UI's Lock action calls study_admin_lock_session(token) to revoke the server session, then removes the token from localStorage.
