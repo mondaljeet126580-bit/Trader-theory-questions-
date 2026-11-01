@@ -403,6 +403,7 @@
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.className = "performance-session-select";
+    checkbox.dataset.sessionId = String(session.id);
     checkbox.checked = selectedPerformanceSessionIds.has(String(session.id));
     checkbox.setAttribute("aria-label", "Select this mock test for Gemini");
     checkbox.addEventListener("change", function () {
@@ -529,6 +530,10 @@
     try {
       const result = await window.WBPQuestionStore.listPerformance();
       const sessions = result.sessions || [];
+      const currentSessionIds = new Set(sessions.map(function (session) { return String(session.id); }));
+      Array.from(selectedPerformanceSessionIds).forEach(function (id) {
+        if (!currentSessionIds.has(id)) selectedPerformanceSessionIds.delete(id);
+      });
       const attempts = result.questionAttempts || [];
       const average = sessions.length
         ? sessions.reduce((sum, item) => sum + Number(item.score || 0), 0) / sessions.length
@@ -625,11 +630,7 @@
             selectedPerformanceSessionIds.add(String(session.id));
           });
           target.querySelectorAll(".performance-session-select").forEach(function (checkbox) {
-            checkbox.checked = selectedPerformanceSessionIds.has(checkbox.closest(".performance-session-card")?.querySelector(".performance-session-select")?.dataset?.id);
-          });
-          // Checkbox IDs are attached below by renderSessionCard, so update by card order.
-          target.querySelectorAll(".performance-session-select").forEach(function (checkbox, index) {
-            checkbox.checked = index < 20;
+            checkbox.checked = selectedPerformanceSessionIds.has(checkbox.dataset.sessionId);
           });
           updateGeminiPerformanceToolbar();
         };
