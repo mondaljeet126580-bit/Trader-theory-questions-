@@ -216,6 +216,26 @@
     return { count: saved, firstNumber: firstNumber, lastNumber: lastNumber };
   }
 
+  const DEVICE_KEY_STORAGE = "exam_prep_mock_test_device_key";
+
+  function createDeviceKey() {
+    const bytes = new Uint8Array(32);
+    global.crypto.getRandomValues(bytes);
+    return Array.from(bytes).map(function (value) {
+      return value.toString(16).padStart(2, "0");
+    }).join("");
+  }
+
+  function getPerformanceAccessKey() {
+    let key = "";
+    try { key = global.localStorage.getItem(DEVICE_KEY_STORAGE) || ""; } catch (_) {}
+    if (!/^[a-f0-9]{64}$/i.test(key)) {
+      key = createDeviceKey();
+      global.localStorage.setItem(DEVICE_KEY_STORAGE, key);
+    }
+    return key;
+  }
+
   function readLocalHistory() {
     try {
       const parsed = JSON.parse(global.localStorage.getItem(LOCAL_HISTORY_KEY) || "[]");
@@ -225,44 +245,98 @@
     }
   }
 
-  async function savePerformance(input) {
-    const token = adminToken();
-    const subjectData = await load();
-    const subject = subjectData.subjects.find(function (item) {
-      return item.key === input.subjectKey;
+  function localSessionToPayload(session, subjectLookup) {
+    const answers = Array.isArray(session.answers) ? session.answers : [];
+    const subject = subjectLookup.find(function (item) {
+      return item.key === session.subjectKey || item.name === session.subject_name;
     });
+    return {
+      client_session_id: String(session.id || ("legacy-" + Date.now() + "-" + Math.random().toString(36).slice(2))).slice(0, 120),
+      subject_id: session.subject_id || (subject ? subject.id : null),
+      subject_name: session.subjectName || session.subject_name || (subject && subject.name) || session.subjectKey || "Study",
+      mode: session.mode || "mock",
+      total_questions: Number(session.totalQuestions || session.total_questions || answers.length),
+      correct_count: Number(session.correctCount ?? session.correct_count ?? 0),
+      wrong_count: Number(session.wrongCount ?? session.wrong_count ?? 0),
+      unanswered_count: Number(session.unansweredCount ?? session.unanswered_count ?? 0),
+      score: Number(session.score || 0),
+      duration_seconds: Number(session.durationSeconds ?? session.duration_seconds ?? 0),
+      started_at: session.startedAt || session.started_at || session.submitted_at || new Date().toISOString(),
+      submitted_at: session.submitted_at || new Date().toISOString(),
+      answers: answers
+    };
+  }
 
+  async function pushPerformanceToCloud(payload) {
+    const result = await client().rpc("submit_study_mock_test", {
+      p_device_key: getPerformanceAccessKey(),
+      p_session: payload
+    });
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
+  async function migrateLocalHistory(subjects) {
+    const history = readLocalHistory();
+    if (!history.length) return 0;
+
+    let migrated = 0;
+    for (const session of history) {
+      const payload = localSessionToPayload(session, subjects || []);
+      if (!payload.total_questions || payload.answers.length !== payload.total_questions) continue;
+      await pushPerformanceToCloud(payload);
+      migrated += 1;
+    }
+
+    if (migrated === history.length) {
+      try { global.localStorage.removeItem(LOCAL_HISTORY_KEY); } catch (_) {}
+    } else if (migrated > 0) {
+      const remaining = history.filter(function (session) {
+        return session && session.id && !String(session.id).startsWith("local-migrated-");
+      });
+      try { global.localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(remaining)); } catch (_) {}
+    }
+    return migrated;
+  }
+
+  async function savePerformance(input) {
+    const subjectData = await load();
     const payload = {
-      subject_id: subject ? subject.id : null,
-      subject_name: input.subjectName || (subject && subject.name) || input.subjectKey || "Study",
+      client_session_id: "mock-" + Date.now() + "-" + Math.random().toString(36).slice(2),
+      subject_id: subjectData.subjects.find(function (item) {
+        return item.key === input.subjectKey;
+      })?.id || null,
+      subject_name: input.subjectName || input.subjectKey || "Study",
       mode: input.mode || "mock",
-      total_questions: input.totalQuestions,
-      correct_count: input.correctCount,
-      wrong_count: input.wrongCount,
-      unanswered_count: input.unansweredCount,
-      score: input.score,
-      duration_seconds: input.durationSeconds || 0,
+      total_questions: Number(input.totalQuestions),
+      correct_count: Number(input.correctCount),
+      wrong_count: Number(input.wrongCount),
+      unanswered_count: Number(input.unansweredCount),
+      score: Number(input.score),
+      duration_seconds: Number(input.durationSeconds || 0),
       started_at: input.startedAt || new Date().toISOString(),
+      submitted_at: new Date().toISOString(),
       answers: input.answers || []
     };
 
-    if (token) {
-      const result = await client().rpc("study_admin_save_performance", {
-        p_token: token,
-        p_session: payload
-      });
-      if (result.error) throw result.error;
-      return result.data;
-    }
+    const legacy = readLocalHistory();
+    const safeBackup = Object.assign({ id: payload.client_session_id }, payload);
+    legacy.unshift(safeBackup);
+    try { global.localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(legacy.slice(0, 2000))); } catch (_) {}
 
-    const history = readLocalHistory();
-    const session = Object.assign({
-      id: "local-" + Date.now() + "-" + Math.random().toString(36).slice(2),
-      submitted_at: new Date().toISOString()
-    }, payload);
-    history.unshift(session);
-    global.localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(history.slice(0, 500)));
-    return session;
+    try {
+      const result = await pushPerformanceToCloud(payload);
+      try {
+        const current = readLocalHistory().filter(function (row) {
+          return row.id !== payload.client_session_id;
+        });
+        global.localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify(current));
+      } catch (_) {}
+      return result;
+    } catch (error) {
+      error.localBackupSaved = true;
+      throw error;
+    }
   }
 
   async function listMyQuestions(subjectKey) {
@@ -339,18 +413,34 @@
   }
 
   async function listPerformance() {
-    const token = adminToken();
-    if (token) {
-      const result = await client().rpc("study_admin_list_performance", {
-        p_token: token
+    const subjects = (await load()).subjects || [];
+    await migrateLocalHistory(subjects);
+
+    const limit = 500;
+    let offset = 0;
+    let sessions = [];
+    let total = 0;
+
+    while (true) {
+      const result = await client().rpc("get_my_study_mock_tests", {
+        p_device_key: getPerformanceAccessKey(),
+        p_limit: limit,
+        p_offset: offset
       });
       if (result.error) throw result.error;
-      return {
-        sessions: result.data && result.data.sessions || [],
-        questionAttempts: result.data && result.data.questionAttempts || []
-      };
+
+      const rows = result.data && result.data.sessions || [];
+      total = Number(result.data && result.data.total) || rows.length;
+      sessions = sessions.concat(rows);
+      if (rows.length < limit || sessions.length >= total) break;
+      offset += limit;
     }
-    return { sessions: readLocalHistory(), questionAttempts: [] };
+
+    return {
+      sessions: sessions,
+      questionAttempts: [],
+      total: total
+    };
   }
 
   global.WBPQuestionStore = {
@@ -367,6 +457,7 @@
     clearSubjectQuestions: clearSubjectQuestions,
     deleteSubject: deleteSubject,
     savePerformance: savePerformance,
-    listPerformance: listPerformance
+    listPerformance: listPerformance,
+    getPerformanceAccessKey: getPerformanceAccessKey
   };
 })(window);
