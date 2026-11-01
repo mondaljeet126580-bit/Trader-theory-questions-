@@ -240,6 +240,38 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 .performance-session-net {font-size:10px;color:#fcd34d;padding:0 14px 11px}
 @media(max-width:370px){.mixed-exam-options{grid-template-columns:1fr}.performance-history-tab{font-size:10px;padding:10px 5px}}
 
+
+/* Mixed Mock instruction screen and question-paper source display */
+.mixed-instruction-hero {padding:20px 17px;border-radius:20px;background:radial-gradient(circle at 95% 5%,rgba(168,85,247,.28),transparent 36%),linear-gradient(135deg,#173c76,#144d79 55%,#542b86);border:1px solid rgba(147,197,253,.35);box-shadow:0 14px 28px rgba(0,0,0,.22);margin:10px 0 14px;color:#fff}
+.mixed-instruction-kicker {font-size:9px;letter-spacing:1.7px;font-weight:900;color:#bfdbfe;margin-bottom:9px}
+.mixed-instruction-hero h2 {font-size:22px;margin:0 0 6px;color:#fff}
+.mixed-instruction-hero p {margin:0;color:#dbeafe;font-size:11px;line-height:1.5}
+.mixed-instruction-stat-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:17px}
+.mixed-instruction-stat-grid div {padding:11px 7px;border-radius:12px;text-align:center;background:rgba(3,15,38,.28);border:1px solid rgba(191,219,254,.22)}
+.mixed-instruction-stat-grid strong {display:block;font-size:23px;font-weight:900;color:#fff}
+.mixed-instruction-stat-grid span {display:block;font-size:10px;color:#dbeafe;margin-top:3px}
+.mixed-instruction-panel {background:linear-gradient(145deg,#132746,#101d36);border:1px solid rgba(96,165,250,.25);border-radius:17px;padding:15px;margin:12px 0;box-shadow:0 9px 20px rgba(0,0,0,.14)}
+.mixed-instruction-panel h3 {font-size:15px;margin:0 0 10px;color:#f8fafc}
+.mixed-instruction-panel ol {padding-left:19px;margin:0;color:#c5d4e9;font-size:11px;line-height:1.75}
+.mixed-instruction-panel li {padding-left:3px;margin:4px 0}
+.mixed-bank-header {display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mixed-bank-header p {font-size:10px;color:#9fb5d5;margin:0}
+.mixed-bank-header>span {font-size:11px;font-weight:800;color:#a5f3fc;background:rgba(8,145,178,.16);padding:7px 9px;border-radius:9px;white-space:nowrap}
+.mixed-subject-counts {display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}
+.mixed-subject-count-row {display:flex;justify-content:space-between;gap:6px;align-items:center;background:rgba(3,13,30,.46);border:1px solid rgba(148,163,184,.14);border-radius:10px;padding:9px 10px;color:#cbd5e1;font-size:10px}
+.mixed-subject-count-row strong {font-size:12px;color:#93c5fd}
+.mixed-instruction-warning {font-size:10px;line-height:1.6;color:#fcd9a3;background:rgba(146,64,14,.15);border:1px solid rgba(245,158,11,.2);padding:9px 10px;border-radius:10px;margin-top:11px}
+.mixed-instruction-actions {display:grid;grid-template-columns:.7fr 1.5fr;gap:9px;margin:15px 0 8px}
+.mixed-instruction-actions button {border:0;border-radius:12px;padding:13px 10px;font-size:12px;font-weight:850}
+.mixed-instruction-actions button:last-child {background:linear-gradient(110deg,#2563eb,#7c3aed);color:white;box-shadow:0 7px 17px rgba(79,70,229,.25)}
+.mixed-instruction-status {min-height:18px;text-align:center;color:#86efac;font-size:11px;margin:7px 0 12px}
+.mock-paper-info {margin:10px 0 13px;padding:11px 12px;border-radius:13px;background:linear-gradient(120deg,rgba(30,64,175,.22),rgba(13,148,136,.12));border:1px solid rgba(96,165,250,.24)}
+.mock-paper-info-title {font-size:11px;font-weight:900;color:#bfdbfe;margin-bottom:7px}
+.mock-paper-info-chips {display:flex;flex-wrap:wrap;gap:6px}
+.mock-paper-info-chip {font-size:9px;padding:6px 8px;border-radius:99px;background:rgba(2,15,35,.48);border:1px solid rgba(148,163,184,.17);color:#dbeafe}
+.mixed-source-reference {margin-top:8px;padding:8px 10px;border-radius:9px;background:#eff6ff;border-left:3px solid #2563eb;color:#1e3a8a;font-size:11px;font-weight:800}
+@media(max-width:370px){.mixed-subject-counts{grid-template-columns:1fr}.mixed-instruction-actions{grid-template-columns:1fr}.mixed-instruction-hero h2{font-size:19px}}
+
 </style>
 </head>
 <body>
@@ -383,6 +415,44 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
     </div>
   </div>
 
+  <!-- MIXED MOCK INSTRUCTIONS -->
+  <div id="mixed-instruction-view" class="view-section hidden">
+    <div class="back-home-container">
+      <button class="btn-home" onclick="App.cancelMixedMockInstructions()">← ফিরে যান</button>
+    </div>
+    <section class="mixed-instruction-hero">
+      <div class="mixed-instruction-kicker">OFFICIAL-STYLE EXAM SIMULATOR</div>
+      <h2 id="mixed-instruction-title">WBP Mixed Mock Test</h2>
+      <p id="mixed-instruction-subtitle">পরীক্ষা শুরুর আগে নির্দেশাবলী ভালোভাবে পড়ে নাও।</p>
+      <div class="mixed-instruction-stat-grid">
+        <div><strong id="mixed-instruction-total">85</strong><span>প্রশ্ন</span></div>
+        <div><strong id="mixed-instruction-time">60 min</strong><span>সময়</span></div>
+        <div><strong id="mixed-instruction-negative">¼</strong><span>Negative Marking</span></div>
+      </div>
+    </section>
+    <section class="mixed-instruction-panel">
+      <h3>📝 পরীক্ষার নির্দেশাবলী</h3>
+      <ol>
+        <li>প্রতিটি প্রশ্নের জন্য চারটি বিকল্পের মধ্যে একটি উত্তর নির্বাচন করবে।</li>
+        <li>প্রশ্নপত্রে নম্বর ১ থেকে ধারাবাহিকভাবে সাজানো থাকবে; Database-এর পুরোনো Question Number পরীক্ষা চলাকালীন দেখানো হবে না।</li>
+        <li>প্রতিটি ভুল উত্তরের জন্য ০.২৫ নম্বর কাটা হবে। উত্তর না দিলে কোনো penalty নেই।</li>
+        <li>পরীক্ষার সময় শেষ হলে উত্তরপত্র স্বয়ংক্রিয়ভাবে Submit হবে।</li>
+        <li>Submit করার পর Review-তে প্রতিটি প্রশ্নের আসল Subject এবং Database Question Number দেখা যাবে।</li>
+        <li>প্রতিবার Start করার সময় Supabase থেকে সর্বশেষ প্রশ্নব্যাংক পড়ে নতুন random set তৈরি হবে। আগের পরীক্ষার প্রশ্ন পরের পরীক্ষায় এড়িয়ে চলার চেষ্টা করা হবে, যদি যথেষ্ট নতুন প্রশ্ন থাকে।</li>
+      </ol>
+    </section>
+    <section class="mixed-instruction-panel">
+      <div class="mixed-bank-header"><div><h3>📚 বর্তমান Question Bank</h3><p>Start চাপার সময় সর্বশেষ Supabase data আবার Refresh হবে।</p></div><span id="mixed-instruction-bank-total">0 প্রশ্ন</span></div>
+      <div id="mixed-instruction-subject-counts" class="mixed-subject-counts"></div>
+      <div id="mixed-instruction-warning" class="mixed-instruction-warning"></div>
+    </section>
+    <div class="mixed-instruction-actions">
+      <button type="button" class="btn-home" onclick="App.cancelMixedMockInstructions()">বাতিল</button>
+      <button type="button" id="mixed-confirm-start" onclick="App.confirmStartMixedMock()">🚀 নির্দেশনা পড়েছি — পরীক্ষা শুরু করুন</button>
+    </div>
+    <div id="mixed-instruction-status" class="mixed-instruction-status" aria-live="polite"></div>
+  </div>
+
   <!-- MOCK VIEW -->
   <div id="mock-view" class="view-section hidden">
     <div class="telemetry-row">
@@ -390,6 +460,7 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
       <div id="mock-timer-display" style="font-size:22px;font-weight:bold;color:#ef4444;background:#1e293b;padding:4px 12px;border-radius:6px;border:1px solid #334155;">00:00</div>
     </div>
     <div class="progress-bar-container"><div class="progress-bar-fill" id="mock-progress-bar"></div></div>
+    <div id="mock-paper-info" class="mock-paper-info hidden"></div>
     <div id="mock-card-target"></div>
     <div class="mock-controls">
       <button class="control-btn" onclick="App.navigateMock(-1)">পূর্ববর্তী</button>
@@ -809,6 +880,10 @@ const App = {
   createCardElementHTML: function(q, indexPosition, config = {}) {
     const questionSubjectKey = q._subjectKey || this.currentSubject;
     const questionSubjectName = q._subjectName || this.getSubjectDisplayName(questionSubjectKey);
+    const displayQuestionNumber = config.displayQuestionNumber || q.no;
+    const databaseReferenceHTML = config.showDatabaseReference && q._subjectKey
+      ? `<div class="mixed-source-reference">📚 Database Source: ${this.escapeHTML(questionSubjectName)} · Original Question No. ${q.no}</div>`
+      : '';
     const globalKey = questionSubjectKey + '_' + q.no;
     const isBookmarked = this.cachedBookmarks[globalKey] ? 'active' : '';
     const isGeminiPicked = !!this.geminiSelectedPool[globalKey];
@@ -865,18 +940,19 @@ const App = {
       </div>`;
 
     return `
-      <div class="card-wrapper ${isGeminiPicked ? 'gemini-card-picked' : ''}" id="card-wrap-${this.currentSubject}-${q.no}">
+      <div class="card-wrapper ${isGeminiPicked ? 'gemini-card-picked' : ''}" id="card-wrap-${questionSubjectKey}-${q.no}">
         <div class="card-strip-text">
-          <div class="card-strip-title">${this.escapeHTML(questionSubjectName)}</div>
-          <div class="card-strip-sub">${q._subjectKey ? 'Mixed Mock Test' : 'WBP & KP Exam'} • Question ${q.no}</div>
+          <div class="card-strip-title">${q._subjectKey && !config.showDatabaseReference ? 'Mixed Mock Test' : this.escapeHTML(questionSubjectName)}</div>
+          <div class="card-strip-sub">${q._subjectKey ? 'Mixed Mock Test' : 'WBP & KP Exam'} • Question ${displayQuestionNumber}</div>
         </div>
         <div class="question-card">
           <button class="bookmark-star ${isBookmarked}" title="স্টার / বুকমার্ক করুন" onclick="App.toggleBookmarkDirect('${questionSubjectKey}', ${q.no}, this, event)">★</button>
           <div class="question-row">
-            <div class="number-box">${q.no}</div>
+            <div class="number-box">${displayQuestionNumber}</div>
             <div class="question-text-block">
-              <div class="q-title">QUESTION ${q.no} ${statusBadgeHTML}</div>
+              <div class="q-title">QUESTION ${displayQuestionNumber} ${statusBadgeHTML}</div>
               ${questionMarkup}
+              ${databaseReferenceHTML}
             </div>
           </div>
           <div class="options-container">${optionsBlock}</div>
