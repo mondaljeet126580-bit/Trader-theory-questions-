@@ -443,6 +443,12 @@
       chips.appendChild(chip);
     });
     host.appendChild(chips);
+
+    const activeSetNote = document.createElement("div");
+    activeSetNote.className = "mock-paper-active-set";
+    activeSetNote.id = "mock-paper-active-set";
+    host.appendChild(activeSetNote);
+
     host.classList.remove("hidden");
 
     if (window.App && typeof window.App.updateMixedSectionButtons === "function") {
@@ -459,6 +465,15 @@
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", active ? "true" : "false");
     });
+
+    const activeSection = this.mixedExamConfig.paperSections.find(function (section) {
+      return section.key === activeKey;
+    });
+    const note = $("mock-paper-active-set");
+    if (note && activeSection) {
+      note.textContent = "এখন চলছে: " + activeSection.name + " Set · প্রশ্ন ১–" +
+        activeSection.count + " · এই Set-এর ভিতরে Previous/Next চলবে। অন্য Subject Set-এ যেতে উপরের Button চাপো।";
+    }
   };
 
   App.jumpToMixedSection = function (sectionKey) {
