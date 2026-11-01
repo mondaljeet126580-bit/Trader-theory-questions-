@@ -12,7 +12,7 @@ A Bengali-first static MCQ study and mock-test application connected to the exis
 
 The main app does not require Supabase email/password sign-in.
 
-- Visitors see subjects and questions marked as published.
+- All existing study Subjects and all 2,210 existing MCQs are marked Published and visible to every User App visitor without Admin unlock.
 - The User App has no Admin Panel button or published Admin UI.
 - Open the local Admin HTML, unlock it, then use its **Open Exam Prep User App** link. This transfers a short-lived Admin session through a URL fragment; the User App stores it in its own browser origin and immediately clears the fragment from the address bar.
 - The token is not the passcode, is validated by Supabase, expires after four hours, and is revoked by the Admin Lock action.
@@ -32,15 +32,15 @@ The token is sent with Admin-only RPC calls. Those functions validate the token 
 ## Admin Panel features
 
 - Select an existing subject.
-- Create a new subject.
+- Create a new subject; new Subjects are published immediately and appear in the User App.
 - Paste many question blocks at once.
 - Import TXT or JSON files.
 - Preview and validate questions before saving.
 - Import text-based, selectable PDF files as well as TXT/JSON files. PDF text is extracted in the browser with Mozilla PDF.js; scanned/image-only PDFs are not OCR-processed.
 - Add MCQs with 2–8 options, correct answer, and optional explanation.
 - Continue numbering from the subject's latest question.
-- Insert questions to the existing public.mcq_questions table in batches of 250, linked by a required subject_id foreign key.
-- Review only your own private Admin-uploaded questions in the "My Uploaded Questions" panel.
+- Insert questions to the existing public.mcq_questions table in batches of 250, linked by a required subject_id foreign key. New uploads are published immediately and appear to everyone in the User App.
+- Review only your own Admin-uploaded questions in the "My Uploaded Questions" panel, including published uploads.
 - Delete one owned upload or select multiple owned uploads.
 - Permanently clear every MCQ from one selected Subject while keeping the Subject.
 - Permanently clear every MCQ across all Subjects while keeping Subject records.
