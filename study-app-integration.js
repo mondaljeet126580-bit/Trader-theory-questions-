@@ -15,6 +15,29 @@
     } catch (_) { return ""; }
   }
 
+  function consumeAdminSessionFromHash() {
+    try {
+      const rawHash = String(window.location.hash || "").replace(/^#/, "");
+      if (!rawHash) return false;
+
+      const params = new URLSearchParams(rawHash);
+      const token = params.get("admin_session") || "";
+      if (!/^[a-f0-9]{64}$/i.test(token)) return false;
+
+      // The temporary bearer token is removed from the address bar immediately.
+      localStorage.setItem(TOKEN_KEY, token);
+      window.history.replaceState(
+        window.history.state,
+        document.title,
+        window.location.pathname + window.location.search
+      );
+      return true;
+    } catch (error) {
+      console.error("Admin session handoff could not be stored.", error);
+      return false;
+    }
+  }
+
   App.lastLoadedAdminToken = null;
   App.questionRefreshInProgress = false;
 
@@ -121,6 +144,10 @@
 
   App.init = async function () {
     try {
+      // A local-only Admin Panel can pass its short-lived token in the URL
+      // fragment. Save it to this User App origin and immediately clear it.
+      consumeAdminSessionFromHash();
+
       // Load Supabase subjects/questions first so saved subject preferences
       // can be restored against the real current subject list.
       await this.refreshQuestionData({ initial: true });
