@@ -240,9 +240,17 @@
       .map(function (entry) {
         const key = entry[0];
         const rows = Array.isArray(entry[1]) ? entry[1] : [];
+        const label = App.getSubjectDisplayName(key);
+        const identity = (key + " " + label).toLowerCase();
+        let category = "general";
+        if (/math|গণিত/.test(identity)) category = "math";
+        else if (/english|ইংরেজি/.test(identity)) category = "english";
+        else if (/reason|logical|রিজনিং|যুক্তি/.test(identity)) category = "reasoning";
+
         return {
           key: key,
-          name: App.getSubjectDisplayName(key),
+          name: label,
+          category: category,
           rows: rows.slice().filter(function (q) {
             return q && q.options && q.correct && q.bn;
           }).sort(function () { return Math.random() - 0.5; })
@@ -260,24 +268,62 @@
       return;
     }
 
-    // Round-robin across every populated Subject so the paper is genuinely mixed.
-    const pool = [];
-    let cursor = 0;
-    while (pool.length < config.totalQuestions) {
-      let addedInRound = false;
-      for (let index = 0; index < entries.length && pool.length < config.totalQuestions; index += 1) {
-        const entry = entries[(index + cursor) % entries.length];
-        if (!entry.rows.length) continue;
-        const question = entry.rows.pop();
-        pool.push(Object.assign({}, question, {
-          _subjectKey: entry.key,
-          _subjectName: entry.name
-        }));
-        addedInRound = true;
+    const sectionPlan = examType === "wbp"
+      ? { general: 25, english: 10, math: 25, reasoning: 25 }
+      : { general: 40, math: 30, reasoning: 30 };
+
+    function sampleRoundRobin(subjectEntries, requiredCount) {
+      const source = subjectEntries.map(function (entry) {
+        return { key: entry.key, name: entry.name, rows: entry.rows.slice() };
+      }).sort(function () { return Math.random() - 0.5; });
+      const chosen = [];
+      let cursor = 0;
+
+      while (chosen.length < requiredCount) {
+        let added = false;
+        for (let i = 0; i < source.length && chosen.length < requiredCount; i += 1) {
+          const entry = source[(i + cursor) % source.length];
+          if (!entry || !entry.rows.length) continue;
+          const question = entry.rows.pop();
+          chosen.push(Object.assign({}, question, {
+            _subjectKey: entry.key,
+            _subjectName: entry.name
+          }));
+          added = true;
+        }
+        if (!added) break;
+        cursor += 1;
       }
-      if (!addedInRound) break;
-      cursor += 1;
+      return chosen;
     }
+
+    const exactSubjectSplitAvailable = Object.entries(sectionPlan).every(function (item) {
+      const category = item[0];
+      const required = item[1];
+      const available = entries
+        .filter(function (entry) { return entry.category === category; })
+        .reduce(function (sum, entry) { return sum + entry.rows.length; }, 0);
+      return available >= required;
+    });
+
+    let pool = [];
+    if (exactSubjectSplitAvailable) {
+      Object.entries(sectionPlan).forEach(function (item) {
+        const category = item[0];
+        const required = item[1];
+        const chosen = sampleRoundRobin(
+          entries.filter(function (entry) { return entry.category === category; }),
+          required
+        );
+        pool = pool.concat(chosen);
+      });
+      pool.sort(function () { return Math.random() - 0.5; });
+    } else {
+      // Until all required section banks exist, fairly sample across every populated Subject.
+      pool = sampleRoundRobin(entries, config.totalQuestions);
+    }
+
+    config.exactSubjectSplit = exactSubjectSplitAvailable;
 
     if (pool.length !== config.totalQuestions) {
       alert("প্রয়োজনীয় প্রশ্নসংখ্যা তৈরি করা যায়নি।");
@@ -365,7 +411,8 @@
     $("result-percentage").textContent = score.toFixed(1) + "% নম্বর পেয়েছেন";
     $("modal-percentage").textContent = score.toFixed(1) + "% নম্বর পেয়েছেন";
     $("res-summary-line").textContent = examConfig
-      ? "মোট প্রশ্ন: " + total + " | " + examConfig.title + " | 60 মিনিট"
+      ? "মোট প্রশ্ন: " + total + " | " + examConfig.title + " | 60 মিনিট" +
+        (examConfig.exactSubjectSplit ? " | Official subject split" : " | Available-subject mixed fallback")
       : "মোট প্রশ্ন: " + total + " | নির্বাচিত বিষয়: " + this.getSubjectDisplayName(this.currentSubject);
 
     const negativeNote = $("result-negative-note");
@@ -374,7 +421,8 @@
         negativeNote.classList.remove("hidden");
         negativeNote.textContent = "Negative marking: প্রতি ভুলে -" +
           negativeMarking.toFixed(2) + " · মোট penalty -" +
-          negativeMarks.toFixed(2) + " · Net marks " + netMarks.toFixed(2) + "/" + total;
+          negativeMarks.toFixed(2) + " · Net marks " + netMarks.toFixed(2) + "/" + total +
+          (examConfig.exactSubjectSplit ? " · Official subject split" : " · Available Subject mix (Math/English bank incomplete)");
       } else {
         negativeNote.classList.add("hidden");
         negativeNote.textContent = "";
