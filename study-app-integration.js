@@ -213,10 +213,106 @@
     }
   };
 
+  App.startMixedMock = function (examType) {
+    const configs = {
+      wbp: {
+        mode: "mixed_wbp",
+        title: "WBP Constable Written — Mixed Mock",
+        totalQuestions: 85,
+        minutes: 60,
+        negativeMarking: 0.25
+      },
+      kp: {
+        mode: "mixed_kp",
+        title: "Kolkata Police Preliminary — Mixed Mock",
+        totalQuestions: 100,
+        minutes: 60,
+        negativeMarking: 0.25
+      }
+    };
+    const config = configs[String(examType || "").toLowerCase()];
+    if (!config) {
+      alert("WBP অথবা KP Mixed Mock নির্বাচন করুন।");
+      return;
+    }
+
+    const entries = Object.entries(questionsDatabase || {})
+      .map(function (entry) {
+        const key = entry[0];
+        const rows = Array.isArray(entry[1]) ? entry[1] : [];
+        return {
+          key: key,
+          name: App.getSubjectDisplayName(key),
+          rows: rows.slice().filter(function (q) {
+            return q && q.options && q.correct && q.bn;
+          }).sort(function () { return Math.random() - 0.5; })
+        };
+      })
+      .filter(function (entry) { return entry.rows.length > 0; })
+      .sort(function () { return Math.random() - 0.5; });
+
+    const availableCount = entries.reduce(function (sum, entry) {
+      return sum + entry.rows.length;
+    }, 0);
+    if (availableCount < config.totalQuestions) {
+      alert("এই Mixed Mock-এর জন্য " + config.totalQuestions +
+        "টি প্রশ্ন দরকার, কিন্তু বর্তমানে " + availableCount + "টি প্রশ্ন পাওয়া গেছে।");
+      return;
+    }
+
+    // Round-robin across every populated Subject so the paper is genuinely mixed.
+    const pool = [];
+    let cursor = 0;
+    while (pool.length < config.totalQuestions) {
+      let addedInRound = false;
+      for (let index = 0; index < entries.length && pool.length < config.totalQuestions; index += 1) {
+        const entry = entries[(index + cursor) % entries.length];
+        if (!entry.rows.length) continue;
+        const question = entry.rows.pop();
+        pool.push(Object.assign({}, question, {
+          _subjectKey: entry.key,
+          _subjectName: entry.name
+        }));
+        addedInRound = true;
+      }
+      if (!addedInRound) break;
+      cursor += 1;
+    }
+
+    if (pool.length !== config.totalQuestions) {
+      alert("প্রয়োজনীয় প্রশ্নসংখ্যা তৈরি করা যায়নি।");
+      return;
+    }
+
+    this.mixedExamConfig = config;
+    this.configRange.specialFilter = null;
+    $("mock-size-select").value = String(config.totalQuestions);
+    $("mock-timer-select").value = String(config.minutes);
+    $("mock-target-select").value = "ALL";
+    $("mock-order-select").value = "SHUFFLE";
+
+    const oldGetActiveDataset = this.getActiveDataset;
+    this.getActiveDataset = function () { return pool; };
+    try {
+      this.startMockMode();
+    } finally {
+      this.getActiveDataset = oldGetActiveDataset;
+    }
+
+    if ($("mock-view").classList.contains("hidden") ||
+        !this.mockState.activePool ||
+        this.mockState.activePool.length !== config.totalQuestions) {
+      this.mixedExamConfig = null;
+      alert("Mixed Mock শুরু করা যায়নি। আবার চেষ্টা করুন।");
+      return;
+    }
+  };
+
   const originalSubmitMock = App.submitMock;
   App.submitMock = async function () {
     if (this.performanceSaving || !this.mockState.activePool.length) return;
 
+    const examConfig = this.mixedExamConfig || null;
     const startedAt = this.mockStartedAt || new Date().toISOString();
     const submittedAt = Date.now();
     let correct = 0;
@@ -234,7 +330,11 @@
         question_id: question.id || null,
         question_no: question.no,
         question_bn: question.bn || question.question || "",
+        subject_name: question._subjectName || this.getSubjectDisplayName(this.currentSubject),
+        subject_key: question._subjectKey || this.currentSubject,
+        en: question.en || "",
         options: question.options || {},
+        explanation: question.explanation || "",
         selected_answer: selected,
         correct_answer: question.correct,
         is_correct: isCorrect
@@ -242,34 +342,60 @@
     });
 
     const total = this.mockState.activePool.length;
-    const score = total ? Number(((correct / total) * 100).toFixed(2)) : 0;
+    const negativeMarking = examConfig ? Number(examConfig.negativeMarking || 0.25) : 0;
+    const negativeMarks = Number((wrong * negativeMarking).toFixed(2));
+    const netMarks = Math.max(0, Number((correct - negativeMarks).toFixed(2)));
+    const score = total ? Number(((netMarks / total) * 100).toFixed(2)) : 0;
     const durationSeconds = Math.max(0, Math.round((submittedAt - new Date(startedAt).getTime()) / 1000));
     const target = $("mock-target-select").value;
-    const mode = this.configRange.specialFilter === "BOOKMARK"
-      ? "starred"
-      : (target === "WRONG" ? "wrong" : "mock");
+    const mode = examConfig
+      ? examConfig.mode
+      : (this.configRange.specialFilter === "BOOKMARK"
+        ? "starred"
+        : (target === "WRONG" ? "wrong" : "mock"));
 
     this.performanceSaving = true;
     originalSubmitMock.call(this);
 
-    // Populate the animated score summary on the result/review screen.
+    // Apply the official mixed-exam negative-marking score to the result screen.
     const resultFill = $("result-score-fill");
     if (resultFill) resultFill.style.width = score + "%";
     const orbitText = $("result-score-orbit-text");
     if (orbitText) orbitText.textContent = score.toFixed(0) + "%";
+    $("result-percentage").textContent = score.toFixed(1) + "% নম্বর পেয়েছেন";
+    $("modal-percentage").textContent = score.toFixed(1) + "% নম্বর পেয়েছেন";
+    $("res-summary-line").textContent = examConfig
+      ? "মোট প্রশ্ন: " + total + " | " + examConfig.title + " | 60 মিনিট"
+      : "মোট প্রশ্ন: " + total + " | নির্বাচিত বিষয়: " + this.getSubjectDisplayName(this.currentSubject);
+
+    const negativeNote = $("result-negative-note");
+    if (negativeNote) {
+      if (examConfig) {
+        negativeNote.classList.remove("hidden");
+        negativeNote.textContent = "Negative marking: প্রতি ভুলে -" +
+          negativeMarking.toFixed(2) + " · মোট penalty -" +
+          negativeMarks.toFixed(2) + " · Net marks " + netMarks.toFixed(2) + "/" + total;
+      } else {
+        negativeNote.classList.add("hidden");
+        negativeNote.textContent = "";
+      }
+    }
 
     const status = $("performance-save-status");
     if (status) status.textContent = "Performance history সংরক্ষণ হচ্ছে...";
     try {
       await window.WBPQuestionStore.savePerformance({
-        subjectKey: this.currentSubject,
-        subjectName: this.getSubjectDisplayName(this.currentSubject),
+        subjectKey: examConfig ? null : this.currentSubject,
+        subjectName: examConfig ? examConfig.title : this.getSubjectDisplayName(this.currentSubject),
         mode: mode,
         totalQuestions: total,
         correctCount: correct,
         wrongCount: wrong,
         unansweredCount: unanswered,
         score: score,
+        negativeMarking: negativeMarking,
+        negativeMarks: negativeMarks,
+        netMarks: netMarks,
         durationSeconds: durationSeconds,
         startedAt: startedAt,
         answers: answers
@@ -282,6 +408,7 @@
     } finally {
       this.performanceSaving = false;
       this.mockStartedAt = null;
+      this.mixedExamConfig = null;
     }
   };
 
@@ -326,11 +453,14 @@
     const lines = [
       "EXAM PREP — MOCK TEST PERFORMANCE",
       "Test: " + (index + 1),
-      "Subject: " + (session.subject_name || "Unknown"),
+      "Test Type: " + (isMixedPerformanceSession(session) ? (session.mode === "mixed_wbp" ? "WBP Mixed Mock" : "KP Mixed Mock") : "Sectional Mock Test"),
+      "Subject / Exam: " + (session.subject_name || "Unknown"),
       "Date: " + formatDate(session.submitted_at),
       "Score: " + Number(session.score || 0).toFixed(1) + "%",
       "Total Questions: " + session.total_questions,
       "Correct: " + session.correct_count + " | Wrong: " + session.wrong_count + " | Skipped: " + session.unanswered_count,
+      "Negative marking: -" + Number(session.negative_marking || 0).toFixed(2) + " per wrong answer | Total penalty: " + Number(session.negative_marks || 0).toFixed(2),
+      "Net Marks: " + Number(session.net_marks || 0).toFixed(2),
       "Duration: " + (session.duration_seconds || 0) + " seconds",
       "",
       "ANSWER-BY-ANSWER REVIEW"
@@ -342,6 +472,7 @@
       const explanation = answer.explanation || (linked && linked.explanation) || "";
       const state = answer.is_correct ? "CORRECT" : (answer.selected_answer ? "WRONG" : "SKIPPED");
       lines.push("");
+      lines.push("Subject: " + (answer.subject_name || (linked && linked._subjectName) || session.subject_name || "Unknown"));
       lines.push("Q" + (answer.question_no || answerIndex + 1) + ": " + (answer.question_bn || (linked && (linked.bn || linked.question)) || "Question text unavailable"));
       if (answer.en || (linked && linked.en)) lines.push("English: " + (answer.en || linked.en));
       Object.keys(options).forEach(function (key) {
@@ -382,11 +513,17 @@
     }
   }
 
+  let performanceHistoryFilter = "sectional";
+
+  function isMixedPerformanceSession(session) {
+    return String(session.mode || "").indexOf("mixed_") === 0;
+  }
+
   function updateGeminiPerformanceToolbar() {
     const selectedCount = selectedPerformanceSessionIds.size;
     const status = $("gemini-performance-selection-status");
     const copyButton = $("copy-selected-performance");
-    if (status) status.textContent = selectedCount + " / 20টি Test নির্বাচন করা হয়েছে";
+    if (status) status.textContent = selectedCount + "টি Test নির্বাচন করা হয়েছে";
     if (copyButton) {
       copyButton.disabled = selectedCount === 0;
       copyButton.textContent = "✦ Selected Tests Copy (" + selectedCount + ")";
@@ -409,12 +546,6 @@
     checkbox.addEventListener("change", function () {
       const id = String(session.id);
       if (checkbox.checked) {
-        if (!selectedPerformanceSessionIds.has(id) && selectedPerformanceSessionIds.size >= 20) {
-          checkbox.checked = false;
-          const feedback = $("gemini-performance-copy-feedback");
-          if (feedback) feedback.textContent = "একসঙ্গে সর্বোচ্চ ২০টি Test নির্বাচন করতে পারবে।";
-          return;
-        }
         selectedPerformanceSessionIds.add(id);
       } else {
         selectedPerformanceSessionIds.delete(id);
@@ -427,11 +558,14 @@
     titleBlock.style.flex = "1";
     const title = document.createElement("div");
     title.className = "performance-session-title";
-    title.textContent = (index + 1) + ". " + (session.subject_name || "Mock Test");
+    const testTypeLabel = isMixedPerformanceSession(session)
+      ? (session.mode === "mixed_wbp" ? "WBP Mixed Mock" : "KP Mixed Mock")
+      : (session.subject_name || "Sectional Mock Test");
+    title.textContent = (index + 1) + ". " + testTypeLabel;
     titleBlock.appendChild(title);
     const date = document.createElement("div");
     date.className = "performance-session-date";
-    date.textContent = formatDate(session.submitted_at) + " · " + (session.mode || "mock").toUpperCase();
+    date.textContent = formatDate(session.submitted_at) + " · " + (isMixedPerformanceSession(session) ? "MIXED MOCK" : "SECTIONAL MOCK");
     titleBlock.appendChild(date);
     head.appendChild(titleBlock);
 
@@ -468,6 +602,16 @@
     });
     card.appendChild(metricGrid);
 
+    if (Number(session.negative_marking || 0) > 0) {
+      const net = document.createElement("div");
+      net.className = "performance-session-net";
+      net.textContent = "Negative marking: -" + Number(session.negative_marking).toFixed(2) +
+        " × ভুল " + Number(session.wrong_count || 0) + " = -" +
+        Number(session.negative_marks || 0).toFixed(2) +
+        " · Net marks: " + Number(session.net_marks || 0).toFixed(2);
+      card.appendChild(net);
+    }
+
     const body = document.createElement("div");
     body.className = "performance-session-body";
 
@@ -489,7 +633,8 @@
       row.className = "performance-answer-card " + state;
       const question = document.createElement("div");
       question.className = "performance-answer-question";
-      question.textContent = "Q" + (answer.question_no || answerIndex + 1) + ". " +
+      question.textContent = (answer.subject_name ? "[" + answer.subject_name + "] " : "") +
+        "Q" + (answer.question_no || answerIndex + 1) + ". " +
         (answer.question_bn || (linked && (linked.bn || linked.question)) || "Question text unavailable");
       row.appendChild(question);
 
