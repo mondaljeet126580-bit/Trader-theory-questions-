@@ -22,23 +22,23 @@ The Admin Panel is no longer linked or hosted by the public User App. It is dist
 
 The unlock function uses the single existing row in public.study_admins to identify the Admin owner. It returns no token unless exactly one Study Admin is configured.
 
-## Private content and RPC access
+## Public study content and Admin-only operations
 
 Admin RPCs are exposed to the Supabase Data API so they can be called from the static browser app. They are SECURITY DEFINER functions with an empty search path and explicit schema qualification. They require a valid unguessable session token and expiry before returning data or performing writes.
 
-- study_admin_load_content(token): published content plus private content owned by the configured Admin.
-- study_admin_create_subject(token, slug, name): creates a private subject owned by the configured Admin.
+- study_admin_load_content(token): all published content plus rows owned by the configured Admin.
+- study_admin_create_subject(token, slug, name): creates a published/public Subject owned by the configured Admin.
 - study_admin_rename_subject(token, subject_slug, new_name): renames the visible Subject label while preserving the slug, subject_id, and every attached MCQ.
-- study_admin_bulk_add_questions(token, subject_slug, questions): validates and inserts MCQs as private/unpublished.
+- study_admin_bulk_add_questions(token, subject_slug, questions): validates and inserts MCQs as published/public, linked to the selected Subject ID.
 - study_admin_count_questions(token, subject_slug): counts questions visible to that Admin session.
 - study_admin_save_performance(token, session): saves a private performance session under the configured Admin owner.
 - study_admin_list_performance(token): reads that owner's performance sessions and legacy question-attempt records.
 - study_admin_lock_session(token): revokes the active token when the Admin locks the panel.
 - study_admin_rename_subject(token, subject_slug, new_name): changes the display name fields of the selected Subject without changing its slug or ID.
-- study_admin_list_my_questions(token, subject_slug): returns only the configured Admin owner's private, unpublished rows with source_type = admin_upload.
-- study_admin_delete_questions(token, question_ids): validates every requested ID belongs to that Admin and is still an unpublished admin_upload row, then permanently deletes the selected rows.
+- study_admin_list_my_questions(token, subject_slug): returns the configured Admin owner's uploads with source_type = admin_upload, including published uploads.
+- study_admin_delete_questions(token, question_ids): validates every requested ID belongs to that Admin and has source_type = admin_upload, then permanently deletes the selected rows whether published or unpublished.
 
-The delete function rejects the entire request if any selected ID is not owned by the current Admin or is already published. Each request is limited to 500 question IDs. Existing foreign keys cascade the question deletion to bookmarks, mock_test_questions, and question_attempts. Saved study_practice_sessions answer snapshots remain intact as past-test history.
+The delete function rejects the entire request if any selected ID is not owned by the current Admin or is not an admin_upload. Published Admin uploads can still be removed by their owner. Each request is limited to 500 question IDs. Existing foreign keys cascade the question deletion to bookmarks, mock_test_questions, and question_attempts. Saved study_practice_sessions answer snapshots remain intact as past-test history.
 
 The session helper is located in app_private, not an exposed schema. Direct access to the app_private tables is revoked from anon/authenticated roles. The old Auth-based passcode verification RPC was revoked because the new Admin flow does not use it.
 
@@ -52,7 +52,7 @@ Local Guest history does not automatically sync to other browsers/devices. Cloud
 
 ## Original bundled subject data restored
 
-The original main-app file contained four starter subjects (General Science, WBP/KP GK, Mathematics, and Reasoning) and six starter MCQs. Those records were not all present in Supabase, so missing public subject rows and missing starter MCQs were inserted idempotently into the existing study tables. The four original subjects are now published. The existing private History and Geography subjects remain private and are visible only with the valid Admin session.
+The original main-app file contained four starter subjects (General Science, WBP/KP GK, Mathematics, and Reasoning) and six starter MCQs. Those records were not all present in Supabase, so missing public subject rows and missing starter MCQs were inserted idempotently into the existing study tables. All existing Subjects, including History, Geography, Biology, and Chemistry, are now published and visible without Admin unlock.
 
 ## Subject-specific MCQ relationship and deletion controls
 
@@ -70,7 +70,7 @@ All 13 existing MCQ rows were deleted across the six Subjects as requested. Subj
 - Added nullable owner_id columns to public.subjects and public.mcq_questions.
 - New subjects created by the local Admin are published immediately (`is_published = true`).
 - Public SELECT policies continue to return published content. The Admin passcode RPC returns only published rows plus rows owned by its configured Admin.
-- Existing personal History question (id 16) remains assigned to the existing Admin owner and unpublished.
+- All 2,210 existing MCQs have been set to published/public; ownership metadata remains unchanged.
 - Added public.study_practice_sessions with RLS on user-owned rows for existing authenticated workflows. The new Admin RPC writes/reads it through the verified passcode session.
 - Added app_private.study_admin_sessions and app_private.study_admin_guest_attempts, both with RLS enabled and no anon/authenticated table grants.
 - Added a salted iterative hash passcode verifier, short-lived tokens, and lockout tracking.
@@ -88,7 +88,7 @@ All 13 existing MCQ rows were deleted across the six Subjects as requested. Subj
 ## Files
 
 - index.html: public Guest-mode User App with no Admin Panel button.
-- study-app-integration.js: app boot, token handoff, private content loading, and performance history.
+- study-app-integration.js: app boot, public content loading, Admin session handoff, and performance history.
 - supabase-client.js: Supabase URL + publishable key.
 - supabase-question-store.js: public content, local Admin RPC adapter, and performance history.
 - Local Admin ZIP (kept outside the public repository): admin.html, admin.js, admin-auth.js, plus the shared Supabase client/store files.
