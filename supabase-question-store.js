@@ -171,6 +171,19 @@
     return result.data;
   }
 
+  async function renameSubject(subjectSlug, newName) {
+    const token = adminToken();
+    if (!token) throw new Error("Admin Panel আগে passcode দিয়ে unlock করুন।");
+
+    const result = await client().rpc("study_admin_rename_subject", {
+      p_token: token,
+      p_subject_slug: String(subjectSlug || "").trim(),
+      p_new_name: String(newName || "").trim()
+    });
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
   async function bulkAddQuestions(subjectKey, sourceQuestions) {
     const token = adminToken();
     if (!token) throw new Error("Admin Panel আগে passcode দিয়ে unlock করুন।");
@@ -344,6 +357,7 @@
     provider: "supabase-passcode-session",
     load: load,
     addSubject: addSubject,
+    renameSubject: renameSubject,
     bulkAddQuestions: bulkAddQuestions,
     listSubjects: listSubjects,
     countQuestions: countQuestions,
