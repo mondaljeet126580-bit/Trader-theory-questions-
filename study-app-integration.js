@@ -352,52 +352,130 @@
       return available >= needed;
     });
 
-    let pool = [];
+    let sampledPool = [];
     if (exactSubjectSplitAvailable) {
       Object.entries(config.sectionPlan).forEach(function (item) {
-        pool = pool.concat(sampleMixedSubjectRoundRobin(
+        sampledPool = sampledPool.concat(sampleMixedSubjectRoundRobin(
           entries.filter(entry => entry.category === item[0]),
           item[1],
           config.recentlyUsed
         ));
       });
-      pool = shuffleMixedRows(pool);
     } else {
-      pool = sampleMixedSubjectRoundRobin(entries, config.totalQuestions, config.recentlyUsed);
+      sampledPool = sampleMixedSubjectRoundRobin(entries, config.totalQuestions, config.recentlyUsed);
     }
-    if (pool.length !== config.totalQuestions) throw new Error("প্রয়োজনীয় প্রশ্নসংখ্যার নতুন Mixed Paper তৈরি করা যায়নি।");
+    if (sampledPool.length !== config.totalQuestions) {
+      throw new Error("প্রয়োজনীয় প্রশ্নসংখ্যার নতুন Mixed Paper তৈরি করা যায়নি।");
+    }
+
+    // Arrange the paper in separate, consecutive Subject Sets.
+    // The local question number restarts from 1 for every Subject.
+    const groupedPool = [];
+    const paperSections = [];
+    entries.forEach(function (entry) {
+      const sectionQuestions = shuffleMixedRows(sampledPool.filter(function (question) {
+        return question._subjectKey === entry.key;
+      }));
+      if (!sectionQuestions.length) return;
+
+      const startIndex = groupedPool.length;
+      sectionQuestions.forEach(function (question, index) {
+        question._sectionQuestionNo = index + 1;
+        question._paperGlobalQuestionNo = groupedPool.length + 1;
+        groupedPool.push(question);
+      });
+      paperSections.push({
+        key: entry.key,
+        name: entry.name,
+        count: sectionQuestions.length,
+        startIndex: startIndex,
+        endIndex: groupedPool.length - 1
+      });
+    });
+
+    if (groupedPool.length !== config.totalQuestions) {
+      throw new Error("Subject-wise Mixed Paper তৈরি করা যায়নি। আবার চেষ্টা করুন।");
+    }
 
     config.exactSubjectSplit = exactSubjectSplitAvailable;
     config.availableQuestionCount = availableCount;
-    config.subjectCounts = pool.reduce(function (counts, question) {
-      const name = question._subjectName || "Unknown";
-      counts[name] = (counts[name] || 0) + 1;
+    config.paperSections = paperSections;
+    config.subjectCounts = paperSections.reduce(function (counts, section) {
+      counts[section.name] = section.count;
       return counts;
     }, {});
-    config.selectedQuestionKeys = pool.map(question => mixedQuestionIdentity(question._subjectKey, question));
-    return pool;
+    config.selectedQuestionKeys = groupedPool.map(function (question) {
+      return mixedQuestionIdentity(question._subjectKey, question);
+    });
+    return groupedPool;
   }
 
   function showMixedPaperComposition(config) {
     const host = $("mock-paper-info");
     if (!host) return;
     host.innerHTML = "";
+
     const heading = document.createElement("div");
     heading.className = "mock-paper-info-title";
     heading.textContent = (config.key === "wbp" ? "WBP" : "KP") +
       " Mixed Paper · " + config.totalQuestions + " Questions · 60 Minutes";
     host.appendChild(heading);
+
+    const instruction = document.createElement("div");
+    instruction.className = "mock-paper-set-instruction";
+    instruction.textContent = "যে Subject Set দিতে চাও, সেটিতে Tap করো। প্রতিটি Set-এর প্রশ্ন নম্বর ১ থেকে শুরু হবে।";
+    host.appendChild(instruction);
+
     const chips = document.createElement("div");
     chips.className = "mock-paper-info-chips";
-    Object.entries(config.subjectCounts || {}).forEach(function (item) {
-      const chip = document.createElement("span");
-      chip.className = "mock-paper-info-chip";
-      chip.textContent = item[0] + " · " + item[1];
+    (config.paperSections || []).forEach(function (section) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "mock-paper-info-chip mock-paper-section-chip";
+      chip.dataset.sectionKey = section.key;
+      chip.textContent = section.name + " · " + section.count;
+      chip.setAttribute("aria-label", section.name + " Set, " + section.count + " questions");
+      chip.addEventListener("click", function () {
+        if (window.App && typeof window.App.jumpToMixedSection === "function") {
+          window.App.jumpToMixedSection(section.key);
+        }
+      });
       chips.appendChild(chip);
     });
     host.appendChild(chips);
     host.classList.remove("hidden");
+
+    if (window.App && typeof window.App.updateMixedSectionButtons === "function") {
+      window.App.updateMixedSectionButtons();
+    }
   }
+
+  App.updateMixedSectionButtons = function () {
+    const host = $("mock-paper-info");
+    if (!host || !this.mixedExamConfig) return;
+    const activeKey = this.activeMixedSectionKey || "";
+    host.querySelectorAll("[data-section-key]").forEach(function (button) {
+      const active = button.dataset.sectionKey === activeKey;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+  };
+
+  App.jumpToMixedSection = function (sectionKey) {
+    const config = this.mixedExamConfig;
+    if (!config || !Array.isArray(config.paperSections)) return;
+    const section = config.paperSections.find(function (item) {
+      return item.key === sectionKey;
+    });
+    if (!section) return;
+
+    this.activeMixedSectionKey = section.key;
+    this.mockState.currentIndex = section.startIndex;
+    this.renderActiveMockSlot();
+    this.updateMixedSectionButtons();
+    window.scrollTo(0, 0);
+  };
+
 
   App.startMixedMock = async function (examType) {
     const config = getMixedExamConfig(examType);
@@ -497,7 +575,11 @@
           JSON.stringify(recentPaperSets.slice(0, 3))
         );
       } catch (_) {}
+      this.activeMixedSectionKey = config.paperSections && config.paperSections[0]
+        ? config.paperSections[0].key
+        : null;
       showMixedPaperComposition(config);
+      if (this.activeMixedSectionKey) this.jumpToMixedSection(this.activeMixedSectionKey);
       this.pendingMixedExamType = null;
     } catch (error) {
       console.error("Mixed Mock could not start.", error);
@@ -528,7 +610,8 @@
 
       return {
         question_id: question.id || null,
-        paper_question_no: index + 1,
+        paper_question_no: question._sectionQuestionNo || index + 1,
+        global_paper_question_no: question._paperGlobalQuestionNo || index + 1,
         question_no: question.no,
         database_question_no: question.no,
         question_bn: question.bn || question.question || "",
@@ -677,7 +760,8 @@
       const state = answer.is_correct ? "CORRECT" : (answer.selected_answer ? "WRONG" : "SKIPPED");
       lines.push("");
       lines.push("Subject: " + (answer.subject_name || (linked && linked._subjectName) || session.subject_name || "Unknown"));
-      lines.push("Paper Q" + (answer.paper_question_no || answerIndex + 1) +
+      lines.push("Set Q" + (answer.paper_question_no || answerIndex + 1) +
+        " · Overall Paper Q" + (answer.global_paper_question_no || answerIndex + 1) +
         " · Database Source: " + (answer.subject_name || session.subject_name || "Unknown") +
         " · Original DB Question No. " + (answer.database_question_no || answer.question_no || "—") +
         ": " + (answer.question_bn || (linked && (linked.bn || linked.question)) || "Question text unavailable"));
@@ -840,7 +924,8 @@
       row.className = "performance-answer-card " + state;
       const question = document.createElement("div");
       question.className = "performance-answer-question";
-      question.textContent = "Paper Q" + (answer.paper_question_no || answerIndex + 1) +
+      question.textContent = "Set Q" + (answer.paper_question_no || answerIndex + 1) +
+        " · Overall Paper Q" + (answer.global_paper_question_no || answerIndex + 1) +
         " · " + (answer.subject_name || session.subject_name || "Unknown") +
         " · DB Q" + (answer.database_question_no || answer.question_no || "—") +
         " — " + (answer.question_bn || (linked && (linked.bn || linked.question)) || "Question text unavailable");
