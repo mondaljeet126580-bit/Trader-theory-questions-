@@ -8,12 +8,12 @@ This integration uses only the Supabase project named Trader-theory-questions- (
 
 The main app no longer displays a Supabase email/password login form. It opens in Guest mode and reads only published rows through the existing RLS policies. It refreshes the question bank on `pageshow`, window focus, document visibility return, and Admin-session storage changes. This ensures question additions/deletions and subject changes appear when returning from the Admin Panel.
 
-When the Admin Panel is unlocked in the same browser, a temporary Admin session token is held in localStorage. The main app can request published content plus the existing Admin owner's private subjects/questions across navigation, page reloads, and tabs. The token expires server-side after four hours and is removed/revoked by the Admin Lock action.
+The Admin Panel is no longer linked or hosted by the public User App. It is distributed as a local ZIP. On unlock, it creates a temporary token. When the user taps the **Open Exam Prep User App** link, the token is passed in a URL fragment to the hosted User App, which stores it in its own localStorage and immediately removes the token from the address bar. The token expires server-side after four hours and is removed/revoked by the Admin Lock action.
 
 ## Admin access and token flow
 
-1. The Admin Panel has one passcode field only. No account email or Supabase account password is requested.
-2. The browser calls public.unlock_study_admin(p_passcode).
+1. The local Admin ZIP has one passcode field only. No account email or Supabase account password is requested.
+2. The local browser calls public.unlock_study_admin(p_passcode).
 3. The database checks the passcode against the salted iterative hash held in the non-exposed app_private.study_admin_passcode table.
 4. On success, a high-entropy random token is created. Only its SHA-256 hash is stored in app_private.study_admin_sessions. The browser receives the raw token and stores it in localStorage (the passcode itself is never stored).
 5. The token expires after four hours. Each Admin RPC validates the hash and expiry. The token is not stored in GitHub or included in source code.
@@ -28,11 +28,13 @@ Admin RPCs are exposed to the Supabase Data API so they can be called from the s
 
 - study_admin_load_content(token): published content plus private content owned by the configured Admin.
 - study_admin_create_subject(token, slug, name): creates a private subject owned by the configured Admin.
+- study_admin_rename_subject(token, subject_slug, new_name): renames the visible Subject label while preserving the slug, subject_id, and every attached MCQ.
 - study_admin_bulk_add_questions(token, subject_slug, questions): validates and inserts MCQs as private/unpublished.
 - study_admin_count_questions(token, subject_slug): counts questions visible to that Admin session.
 - study_admin_save_performance(token, session): saves a private performance session under the configured Admin owner.
 - study_admin_list_performance(token): reads that owner's performance sessions and legacy question-attempt records.
 - study_admin_lock_session(token): revokes the active token when the Admin locks the panel.
+- study_admin_rename_subject(token, subject_slug, new_name): changes the display name fields of the selected Subject without changing its slug or ID.
 - study_admin_list_my_questions(token, subject_slug): returns only the configured Admin owner's private, unpublished rows with source_type = admin_upload.
 - study_admin_delete_questions(token, question_ids): validates every requested ID belongs to that Admin and is still an unpublished admin_upload row, then permanently deletes the selected rows.
 
@@ -85,9 +87,8 @@ All 13 existing MCQ rows were deleted across the six Subjects as requested. Subj
 
 ## Files
 
-- index.html: public Guest-mode app.
-- admin.html: single-passcode Admin screen.
-- admin-auth.js: unlock/lock and tab-scoped token.
+- index.html: public Guest-mode User App with no Admin Panel button.
+- study-app-integration.js: app boot, token handoff, private content loading, and performance history.
 - supabase-client.js: Supabase URL + publishable key.
-- supabase-question-store.js: public content and Admin RPC adapter.
-- study-app-integration.js: app boot, private content when unlocked, and performance history.
+- supabase-question-store.js: public content, local Admin RPC adapter, and performance history.
+- Local Admin ZIP (kept outside the public repository): admin.html, admin.js, admin-auth.js, plus the shared Supabase client/store files.
