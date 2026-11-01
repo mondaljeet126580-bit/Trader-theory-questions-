@@ -117,8 +117,8 @@
 
       if (status) {
         status.textContent = hasAdminAccess
-          ? "Local Admin Tool access active — তোমার private ও published প্রশ্ন লোড হয়েছে।"
-          : "Guest mode — published প্রশ্ন দেখা যাচ্ছে। Private প্রশ্ন দেখতে local Admin ZIP খুলে User App access চালু করো।";
+          ? "Admin session active — সব Subject ও Question লোড হয়েছে।"
+          : "Public mode — সব Published Subject ও Question সবার জন্য দেখা যাচ্ছে।";
       }
 
       // If the user returns to Study Mode after visiting the Admin Panel,
