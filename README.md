@@ -5,7 +5,7 @@ A Bengali-first static MCQ study and mock-test application connected to the exis
 ## Run / publish
 
 - Open index.html for the main study and mock-test app. It opens in Guest mode without an email or password form.
-- The Admin Panel is distributed separately as a private local ZIP; it is not linked or hosted inside the public User App.
+- The Admin Panel is a standalone single-file HTML (`Exam_Prep_Local_Admin.html`) kept on the owner's phone; it is not linked, committed, or hosted inside the public User App.
 - To publish with GitHub Pages, choose the main branch and root folder in Settings → Pages.
 
 ## Main app access
@@ -14,16 +14,16 @@ The main app does not require Supabase email/password sign-in.
 
 - Visitors see subjects and questions marked as published.
 - The User App has no Admin Panel button or published Admin UI.
-- Open the local Admin ZIP, unlock it, then use its **Open Exam Prep User App** link. This transfers a short-lived Admin session through a URL fragment; the User App stores it in its own browser origin and immediately clears the fragment from the address bar.
+- Open the local Admin HTML, unlock it, then use its **Open Exam Prep User App** link. This transfers a short-lived Admin session through a URL fragment; the User App stores it in its own browser origin and immediately clears the fragment from the address bar.
 - The token is not the passcode, is validated by Supabase, expires after four hours, and is revoked by the Admin Lock action.
-- Closing the tab clears the browser-held token. The Admin must unlock again to view private content.
+- The local Admin page keeps its short-lived token in memory only; closing it requires another unlock. The User App stores a transferred token in its own site storage until expiry or Admin Lock.
 - No passcode is embedded in HTML or JavaScript.
 
 Without Admin unlock, past performance is stored in that browser's local storage. After Admin unlock, new test results are saved to Supabase under the existing Study Admin owner and are visible only through a valid Admin session. Guest-mode local history does not automatically sync between devices.
 
 ## Admin Panel access
 
-The standalone local Admin ZIP requires only the additional Admin passcode. It does not ask for Supabase email or account password. The ZIP is not committed to the public GitHub Pages branch.
+The standalone local Admin HTML requires only the additional Admin passcode. It does not ask for Supabase email or account password. The Admin HTML is not committed to the public GitHub Pages branch.
 
 The passcode is verified by public.unlock_study_admin(text). That database function checks the stored salted iterative hash and creates a high-entropy, short-lived token. The raw passcode is not included in this repository. Failed attempts are rate-limited by source/IP and user agent; five failures cause a 15-minute lockout.
 
@@ -95,7 +95,7 @@ No WhatsApp/chat tables or policies were changed.
 ## Repository files
 
 - index.html — main guest-mode study/mock-test UI.
-- Local Admin ZIP — contains admin.html, admin.js, and admin-auth.js; keep it on your phone and do not publish it.
+- Exam_Prep_Local_Admin.html — one self-contained local Admin page; keep it on your phone and do not publish it.
 - supabase-client.js — Supabase URL and publishable client configuration.
 - supabase-question-store.js — public content, passcode RPC, and performance adapter.
 - study-app-integration.js — Guest mode, private content loading, and performance history.
