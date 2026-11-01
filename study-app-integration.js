@@ -454,9 +454,18 @@
       const entries = getCurrentMixedBankEntries();
       const available = entries.reduce((sum, entry) => sum + entry.rows.length, 0);
       config.recentlyUsed = new Set();
+      let recentPaperSets = [];
       try {
-        const prior = JSON.parse(localStorage.getItem("exam_prep_last_mixed_paper_" + config.key) || "[]");
-        if (Array.isArray(prior)) prior.forEach(key => config.recentlyUsed.add(String(key)));
+        const prior = JSON.parse(localStorage.getItem("exam_prep_recent_mixed_papers_" + config.key) || "[]");
+        if (Array.isArray(prior) && prior.length && Array.isArray(prior[0])) {
+          recentPaperSets = prior.slice(0, 3);
+        } else if (Array.isArray(prior) && prior.length) {
+          // Read the previous single-paper format once, then upgrade it.
+          recentPaperSets = [prior];
+        }
+        recentPaperSets.forEach(function (paper) {
+          paper.forEach(function (key) { config.recentlyUsed.add(String(key)); });
+        });
       } catch (_) {}
 
       const pool = buildMixedPaper(config, entries);
@@ -482,7 +491,11 @@
       }
 
       try {
-        localStorage.setItem("exam_prep_last_mixed_paper_" + config.key, JSON.stringify(config.selectedQuestionKeys));
+        recentPaperSets.unshift(config.selectedQuestionKeys);
+        localStorage.setItem(
+          "exam_prep_recent_mixed_papers_" + config.key,
+          JSON.stringify(recentPaperSets.slice(0, 3))
+        );
       } catch (_) {}
       showMixedPaperComposition(config);
       this.pendingMixedExamType = null;
