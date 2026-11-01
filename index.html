@@ -272,6 +272,13 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
 .mixed-source-reference {margin-top:8px;padding:8px 10px;border-radius:9px;background:#eff6ff;border-left:3px solid #2563eb;color:#1e3a8a;font-size:11px;font-weight:800}
 @media(max-width:370px){.mixed-subject-counts{grid-template-columns:1fr}.mixed-instruction-actions{grid-template-columns:1fr}.mixed-instruction-hero h2{font-size:19px}}
 
+
+.mock-paper-set-instruction {font-size:10px;color:#a9c8ed;margin:2px 0 9px;line-height:1.45}
+.mock-paper-section-chip {font:inherit;cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease}
+.mock-paper-section-chip:active {transform:scale(.97)}
+.mock-paper-section-chip.active {background:linear-gradient(110deg,#1d4ed8,#7c3aed);border-color:#93c5fd;color:#fff;box-shadow:0 0 0 2px rgba(96,165,250,.16),0 5px 13px rgba(59,130,246,.22)}
+.mock-paper-active-set {font-size:10px;line-height:1.5;color:#bfdbfe;margin-top:9px;padding:7px 9px;border-radius:9px;background:rgba(15,35,67,.5);border:1px solid rgba(96,165,250,.18)}
+
 </style>
 </head>
 <body>
@@ -881,6 +888,7 @@ const App = {
     const questionSubjectKey = q._subjectKey || this.currentSubject;
     const questionSubjectName = q._subjectName || this.getSubjectDisplayName(questionSubjectKey);
     const displayQuestionNumber = config.displayQuestionNumber || q.no;
+    const displaySetName = config.displaySetName || null;
     const databaseReferenceHTML = config.showDatabaseReference && q._subjectKey
       ? `<div class="mixed-source-reference">📚 Database Source: ${this.escapeHTML(questionSubjectName)} · Original Question No. ${q.no}</div>`
       : '';
@@ -942,8 +950,8 @@ const App = {
     return `
       <div class="card-wrapper ${isGeminiPicked ? 'gemini-card-picked' : ''}" id="card-wrap-${questionSubjectKey}-${q.no}">
         <div class="card-strip-text">
-          <div class="card-strip-title">${q._subjectKey && !config.showDatabaseReference ? 'Mixed Mock Test' : this.escapeHTML(questionSubjectName)}</div>
-          <div class="card-strip-sub">${q._subjectKey ? 'Mixed Mock Test' : 'WBP & KP Exam'} • Question ${displayQuestionNumber}</div>
+          <div class="card-strip-title">${displaySetName ? this.escapeHTML(displaySetName) : (q._subjectKey && !config.showDatabaseReference ? 'Mixed Mock Test' : this.escapeHTML(questionSubjectName))}</div>
+          <div class="card-strip-sub">${q._subjectKey ? 'Mixed Mock Test · Subject Set' : 'WBP & KP Exam'} • Question ${displayQuestionNumber}</div>
         </div>
         <div class="question-card">
           <button class="bookmark-star ${isBookmarked}" title="স্টার / বুকমার্ক করুন" onclick="App.toggleBookmarkDirect('${questionSubjectKey}', ${q.no}, this, event)">★</button>
@@ -1320,7 +1328,8 @@ ${questionBlocksArray.join('\n\n')}
       interactiveMode: true,
       revealCorrectAnswers: false,
       revealExplanation: false,
-      displayQuestionNumber: this.mockState.currentIndex + 1,
+      displayQuestionNumber: q._sectionQuestionNo || (this.mockState.currentIndex + 1),
+      displaySetName: this.mixedExamConfig && q._subjectName ? q._subjectName + " Set" : null,
       showDatabaseReference: false
     });
     const pct = Math.round(((this.mockState.currentIndex + 1) / this.mockState.activePool.length) * 100);
@@ -1335,9 +1344,29 @@ ${questionBlocksArray.join('\n\n')}
 
   navigateMock: function(dir) {
     const newIdx = this.mockState.currentIndex + dir;
-    if(newIdx >= 0 && newIdx < this.mockState.activePool.length) { 
-      this.mockState.currentIndex = newIdx; 
-      this.renderActiveMockSlot(); 
+    let lowerBound = 0;
+    let upperBound = this.mockState.activePool.length - 1;
+
+    if (this.mixedExamConfig && this.activeMixedSectionKey &&
+        Array.isArray(this.mixedExamConfig.paperSections)) {
+      const activeSection = this.mixedExamConfig.paperSections.find(section =>
+        section.key === this.activeMixedSectionKey
+      );
+      if (activeSection) {
+        lowerBound = activeSection.startIndex;
+        upperBound = activeSection.endIndex;
+      }
+    }
+
+    if (newIdx < lowerBound || newIdx > upperBound) {
+      const note = document.getElementById('mock-paper-active-set');
+      if (note) note.textContent = "এই Subject Set শেষ। অন্য Set দিতে উপরের Subject button-এ Tap করো।";
+      return;
+    }
+
+    if(newIdx >= 0 && newIdx < this.mockState.activePool.length) {
+      this.mockState.currentIndex = newIdx;
+      this.renderActiveMockSlot();
     }
   },
 
@@ -1374,7 +1403,8 @@ ${questionBlocksArray.join('\n\n')}
         revealCorrectAnswers: true,
         appendStatusBadge: true,
         revealExplanation: true,
-        displayQuestionNumber: i + 1,
+        displayQuestionNumber: q._sectionQuestionNo || (i + 1),
+        displaySetName: q._subjectKey ? (q._subjectName + " Set") : null,
         showDatabaseReference: !!q._subjectKey
       });
     });
