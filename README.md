@@ -19,7 +19,9 @@ The main app does not require Supabase email/password sign-in.
 - The local Admin page keeps its short-lived token in memory only; closing it requires another unlock. The User App stores a transferred token in its own site storage until expiry or Admin Lock.
 - No passcode is embedded in HTML or JavaScript.
 
-Without Admin unlock, past performance is stored in that browser's local storage. After Admin unlock, new test results are saved to Supabase under the existing Study Admin owner and are visible only through a valid Admin session. Guest-mode local history does not automatically sync between devices.
+Every newly submitted Mock Test is saved to Supabase in `study_mock_test_history`, using a per-browser random device key. The Performance page lists the full test history, including the answer sheet and correct/wrong/skipped breakdown. If older browser-local history exists under `study_local_performance_v1`, opening My Performance migrates valid sessions to Supabase. Each browser has its own history key; tests from different devices are not merged automatically.
+
+The User App Performance page also shows **Copy My MCP Performance Key**. This 64-character device key authorizes read-only MCP access to this browser's Mock Test history. The database stores only its SHA-256 hash. Treat the key as private and do not share it publicly.
 
 ## Admin Panel access
 
@@ -55,6 +57,14 @@ Deletion is owner-checked on the server: only rows with the current Admin owner_
 ## Database reset completed
 
 All 13 existing MCQ rows were deleted from public.mcq_questions across all six Subjects, as requested. The six Subject records remain. Related bookmarks, question_attempts, and mock_test_questions rows were removed by foreign-key cascades. Theory Notes and Performance session rows were preserved. The MCQ subject_id column is now required for all future inserts.
+
+## Read-only Exam Prep MCP
+
+A remote MCP server is deployed at:
+
+`https://mtrnkalszadyzmanyxvx.supabase.co/functions/v1/exam-prep-mcp`
+
+It exposes only read tools: `list_subjects`, `get_questions`, `search_questions`, `get_question`, `get_my_mock_test_history`, and `get_my_mock_test_summary`. The first four read published exam content. The last two require the current browser's MCP Performance Key from User App → My Performance. No MCP tool can add, edit, publish, rename, or delete database content.
 
 ## My Past Performance
 
