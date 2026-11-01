@@ -1271,6 +1271,17 @@ ${questionBlocksArray.join('\n\n')}
       paperInfo.classList.add('hidden');
       paperInfo.innerHTML = '';
     }
+
+    // Only Mixed Mock keeps per-subject paper numbering metadata.
+    const isMixedMock = !!(
+      this.mixedExamConfig &&
+      (this.mixedExamConfig.mode === 'mixed_wbp' || this.mixedExamConfig.mode === 'mixed_kp')
+    );
+    if (!isMixedMock) {
+      this.mixedExamConfig = null;
+      this.activeMixedSectionKey = null;
+    }
+
     let pool = this.getActiveDataset();
     const targetConfig = document.getElementById('mock-target-select').value;
 
@@ -1278,6 +1289,19 @@ ${questionBlocksArray.join('\n\n')}
     else if(targetConfig === 'SKIPPED') pool = pool.filter(q => !!this.cachedSkippedTracker[this.currentSubject + '_' + q.no]);
 
     if(pool.length === 0) { alert("নির্বাচন অনুযায়ী কোনো প্রশ্ন পাওয়া যায়নি।"); return; }
+
+    // A normal Subject Mock uses a clean copy. Database question numbers and any
+    // stale Mixed Mock metadata must not influence displayed paper numbering.
+    if (!isMixedMock) {
+      pool = pool.map(function (question) {
+        const clean = Object.assign({}, question);
+        delete clean._sectionQuestionNo;
+        delete clean._paperGlobalQuestionNo;
+        delete clean._subjectKey;
+        delete clean._subjectName;
+        return clean;
+      });
+    }
 
     const orderCfg = document.getElementById('mock-order-select') ? document.getElementById('mock-order-select').value : 'NORMAL';
     if(orderCfg === 'SHUFFLE') {
@@ -1328,7 +1352,9 @@ ${questionBlocksArray.join('\n\n')}
       interactiveMode: true,
       revealCorrectAnswers: false,
       revealExplanation: false,
-      displayQuestionNumber: q._sectionQuestionNo || (this.mockState.currentIndex + 1),
+      displayQuestionNumber: (this.mixedExamConfig && q._sectionQuestionNo)
+        ? q._sectionQuestionNo
+        : (this.mockState.currentIndex + 1),
       displaySetName: this.mixedExamConfig && q._subjectName ? q._subjectName + " Set" : null,
       showDatabaseReference: false
     });
@@ -1403,9 +1429,11 @@ ${questionBlocksArray.join('\n\n')}
         revealCorrectAnswers: true,
         appendStatusBadge: true,
         revealExplanation: true,
-        displayQuestionNumber: q._sectionQuestionNo || (i + 1),
-        displaySetName: q._subjectKey ? (q._subjectName + " Set") : null,
-        showDatabaseReference: !!q._subjectKey
+        displayQuestionNumber: (this.mixedExamConfig && q._sectionQuestionNo)
+          ? q._sectionQuestionNo
+          : (i + 1),
+        displaySetName: this.mixedExamConfig && q._subjectKey ? (q._subjectName + " Set") : null,
+        showDatabaseReference: !!(this.mixedExamConfig && q._subjectKey)
       });
     });
 
