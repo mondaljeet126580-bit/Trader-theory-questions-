@@ -269,9 +269,7 @@
         answers: answers
       });
 
-      if (status) status.textContent = currentAdminToken()
-        ? "✓ তোমার Performance Supabase-এ private ভাবে সংরক্ষিত হয়েছে।"
-        : "✓ তোমার Performance এই browser-এ সংরক্ষিত হয়েছে। Local Admin access দিলে cloud history-ও ব্যবহার হবে।";
+      if (status) status.textContent = "✓ Mock Test Performance Supabase-এ সংরক্ষিত হয়েছে। My Performance-এ সব Submitted Test দেখা যাবে।";
     } catch (error) {
       console.error("Performance history could not be saved.", error);
       if (status) status.textContent = "Performance save হয়নি: " + (error.message || String(error));
@@ -364,18 +362,33 @@
 
       const target = $("performance-list");
       target.innerHTML = "";
-      const historyMode = currentAdminToken()
-        ? "Supabase private history"
-        : "এই browser-এর local history";
       const modeNote = document.createElement("div");
       modeNote.className = "muted";
-      modeNote.textContent = "History source: " + historyMode;
+      modeNote.textContent = "এই browser থেকে জমা দেওয়া Mock Test Supabase-এ সংরক্ষিত।";
       target.appendChild(modeNote);
+
+      const keyButton = $("copy-mcp-performance-key");
+      if (keyButton) {
+        keyButton.onclick = async function () {
+          const key = window.WBPQuestionStore.getPerformanceAccessKey();
+          const display = $("mcp-performance-key");
+          if (display) {
+            display.textContent = key;
+            display.classList.remove("hidden");
+          }
+          try {
+            await navigator.clipboard.writeText(key);
+            keyButton.textContent = "✓ MCP Access Key Copy হয়েছে";
+          } catch (_) {
+            keyButton.textContent = "নিচের Key কপি করুন";
+          }
+        };
+      }
 
       if (!sessions.length && !attempts.length) {
         const empty = document.createElement("div");
         empty.className = "glass-panel";
-        empty.textContent = "এখনও কোনো Test জমা হয়নি। নতুন Mock Test জমা দিলে তার ফলাফল এখানে দেখা যাবে।";
+        empty.textContent = "এই browser থেকে এখনও কোনো Mock Test submit করা হয়নি। নতুন Test submit করলে Supabase-এ সংরক্ষিত হবে।";
         target.appendChild(empty);
       } else {
         sessions.forEach(function (session, index) {
