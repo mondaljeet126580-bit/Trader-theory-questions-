@@ -1304,7 +1304,12 @@ ${questionBlocksArray.join('\n\n')}
     }
 
     const orderCfg = document.getElementById('mock-order-select') ? document.getElementById('mock-order-select').value : 'NORMAL';
-    if(orderCfg === 'SHUFFLE') {
+    if (isMixedMock) {
+      // Mixed papers are already grouped by Subject Set, with startIndex/endIndex
+      // and per-Subject question numbers assigned by buildMixedPaper().
+      // Never shuffle this pool again here: doing so breaks every Set boundary.
+      pool = [...pool];
+    } else if(orderCfg === 'SHUFFLE') {
       pool = [...pool].sort(() => Math.random() - 0.5);
     } else {
       pool = [...pool].sort((a, b) => a.no - b.no);
