@@ -46,11 +46,11 @@ The token is sent with Admin-only RPC calls. Those functions validate the token 
 - Permanently clear every MCQ across all Subjects while keeping Subject records.
 - Delete any selected Subject together with its MCQs, Chapters, and Theory Notes.
 
-New subjects and questions are saved as unpublished/private and assigned to the existing Study Admin owner. Each MCQ must carry a subject_id foreign key, and the subject slug is stored in the legacy subject text field. The UI groups each question by subject_id, so an MCQ cannot appear in another Subject. Another visitor cannot read private rows through normal public queries. Only a valid Admin session can fetch the private rows.
+New subjects and questions are saved as published/public and assigned to the existing Study Admin owner. Each MCQ carries a subject_id foreign key, and the subject slug is stored in the legacy subject text field. The UI groups each question by subject_id, so an MCQ cannot appear in another Subject. All Users can read published MCQs through the existing SELECT policy.
 
 The four original bundled public starter subjects are also seeded in Supabase: General Science, WBP/KP GK & Current Affairs, Mathematics, and Reasoning & General Intelligence. This keeps the original subject selector populated instead of showing only the first subject row.
 
-Deletion is owner-checked on the server: only rows with the current Admin owner_id, source_type = admin_upload, and is_published = false can be deleted. The related bookmarks, mock-test question links, and individual question_attempts are removed by the database foreign-key cascades. Previously saved study_practice_sessions answer snapshots remain as historical test records.
+Deletion is owner-checked on the server: only rows with the current Admin owner_id and source_type = admin_upload can be individually deleted, whether they are published or not. The related bookmarks, mock-test question links, and individual question_attempts are removed by the database foreign-key cascades. Previously saved study_practice_sessions answer snapshots remain as historical test records.
 
 ## Database reset completed
 
@@ -98,7 +98,7 @@ No WhatsApp/chat tables or policies were changed.
 - Exam_Prep_Local_Admin.html — one self-contained local Admin page; keep it on your phone and do not publish it.
 - supabase-client.js — Supabase URL and publishable client configuration.
 - supabase-question-store.js — public content, passcode RPC, and performance adapter.
-- study-app-integration.js — Guest mode, private content loading, and performance history.
+- study-app-integration.js — public question loading, Admin session handoff, and performance history.
 - question-store.js — older IndexedDB preview adapter, retained but not used by the connected pages.
 - SUPABASE_INTEGRATION.md — schema and security notes.
 
