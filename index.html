@@ -1258,6 +1258,11 @@ ${questionBlocksArray.join('\n\n')}
   },
 
   startMockMode: function() {
+    const paperInfo = document.getElementById('mock-paper-info');
+    if (paperInfo) {
+      paperInfo.classList.add('hidden');
+      paperInfo.innerHTML = '';
+    }
     let pool = this.getActiveDataset();
     const targetConfig = document.getElementById('mock-target-select').value;
 
