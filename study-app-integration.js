@@ -20,8 +20,10 @@
       const rawHash = String(window.location.hash || "").replace(/^#/, "");
       if (!rawHash) return false;
 
-      const params = new URLSearchParams(rawHash);
-      const token = params.get("admin_session") || "";
+      const pair = rawHash.split("&").find(function (part) {
+        return part.split("=")[0] === "admin_session";
+      });
+      const token = pair ? decodeURIComponent(pair.slice(pair.indexOf("=") + 1)) : "";
       if (!/^[a-f0-9]{64}$/i.test(token)) return false;
 
       // The temporary bearer token is removed from the address bar immediately.
