@@ -151,7 +151,6 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
     <button class="nav-tab-btn" id="nav-btn-mock" onclick="App.startMockMode()">✍️ মক টেস্ট মোড</button>
     <button class="nav-tab-btn star-filter-nav" onclick="App.startStarredMock()">⭐ শুধু স্টার করা প্রশ্ন</button>
     <button class="nav-tab-btn" onclick="App.showPerformance()">📈 আমার Performance</button>
-    <button class="nav-tab-btn" onclick="window.location.href='admin.html'">🛠️ Admin Panel</button>
   </div>
 
   <!-- DASHBOARD VIEW -->
@@ -315,7 +314,7 @@ h2,h3,h4 { margin-bottom:12px; font-weight:600; }
       <button class="btn-home" onclick="App.goHome()">← মূল ড্যাশবোর্ডে ফিরে যান</button>
     </div>
     <h2>📈 আমার Past Performance</h2>
-    <p class="muted">Admin Panel unlock থাকলে Supabase-এর private history, না থাকলে এই browser-এ সংরক্ষিত history দেখাবে।</p>
+    <p class="muted">Local Admin Tool unlock করে User App-এ private history access দিলে Supabase-এর personal history দেখা যাবে; Guest mode-এ history এই browser-এ থাকবে।</p>
     <div class="grid-3" style="margin:14px 0;">
       <div class="glass-panel"><div class="q-title">মোট Mock Test</div><strong id="perf-total-tests">0</strong></div>
       <div class="glass-panel"><div class="q-title">গড় নম্বর</div><strong id="perf-average-score">0%</strong></div>
