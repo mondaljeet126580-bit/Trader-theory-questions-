@@ -1314,7 +1314,9 @@ ${questionBlocksArray.join('\n\n')}
       userSelectedOption: this.mockState.selections[this.mockState.currentIndex] || null,
       interactiveMode: true,
       revealCorrectAnswers: false,
-      revealExplanation: false
+      revealExplanation: false,
+      displayQuestionNumber: this.mockState.currentIndex + 1,
+      showDatabaseReference: false
     });
     const pct = Math.round(((this.mockState.currentIndex + 1) / this.mockState.activePool.length) * 100);
     document.getElementById('mock-progress-bar').style.width = `${pct}%`;
@@ -1362,11 +1364,13 @@ ${questionBlocksArray.join('\n\n')}
         delete this.cachedSkippedTracker[cacheKey];
       }
       
-      targetReview.innerHTML += this.createCardElementHTML(q, i, { 
-        userSelectedOption: selection, 
-        revealCorrectAnswers: true, 
+      targetReview.innerHTML += this.createCardElementHTML(q, i, {
+        userSelectedOption: selection,
+        revealCorrectAnswers: true,
         appendStatusBadge: true,
-        revealExplanation: true
+        revealExplanation: true,
+        displayQuestionNumber: i + 1,
+        showDatabaseReference: !!q._subjectKey
       });
     });
 
