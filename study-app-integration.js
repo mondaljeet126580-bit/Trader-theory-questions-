@@ -670,7 +670,7 @@
 
   App.showPerformance = async function () {
     this.switchView("performance-view");
-    $("performance-list").textContent = "তোমার history লোড হচ্ছে...";
+    $("performance-list").textContent = "তোমার Mock Test History লোড হচ্ছে...";
 
     try {
       const result = await window.WBPQuestionStore.listPerformance();
@@ -680,6 +680,8 @@
         if (!currentSessionIds.has(id)) selectedPerformanceSessionIds.delete(id);
       });
       const attempts = result.questionAttempts || [];
+      const sectionalSessions = sessions.filter(function (session) { return !isMixedPerformanceSession(session); });
+      const mixedSessions = sessions.filter(isMixedPerformanceSession);
       const average = sessions.length
         ? sessions.reduce((sum, item) => sum + Number(item.score || 0), 0) / sessions.length
         : 0;
@@ -704,14 +706,17 @@
         stat.appendChild(value);
         summary.appendChild(stat);
       });
+
       const countLabel = $("performance-list-count");
       if (countLabel) countLabel.textContent = sessions.length + " tests";
+      $("sectional-history-count").textContent = sectionalSessions.length;
+      $("mixed-history-count").textContent = mixedSessions.length;
 
       const target = $("performance-list");
       target.innerHTML = "";
       const modeNote = document.createElement("div");
       modeNote.className = "muted";
-      modeNote.textContent = "এই browser থেকে জমা দেওয়া Mock Test Supabase-এ সংরক্ষিত।";
+      modeNote.textContent = "সব Test Supabase-এ এই browser-এর history হিসেবে সংরক্ষিত।";
       target.appendChild(modeNote);
 
       const keyButton = $("copy-mcp-performance-key");
@@ -734,31 +739,67 @@
 
       if (!sessions.length && !attempts.length) {
         const empty = document.createElement("div");
-        empty.className = "glass-panel";
-        empty.textContent = "এই browser থেকে এখনও কোনো Mock Test submit করা হয়নি। নতুন Test submit করলে Supabase-এ সংরক্ষিত হবে।";
+        empty.className = "performance-history-empty";
+        empty.textContent = "এখনও কোনো Mock Test জমা হয়নি। Sectional অথবা Mixed Mock Test Submit করলে এখানে History জমা হবে।";
         target.appendChild(empty);
       } else {
         const questionIndex = performanceQuestionIndex();
-        const sessionById = {};
-        sessions.forEach(function (session) { sessionById[String(session.id)] = session; });
-        sessions.forEach(function (session, index) {
-          target.appendChild(renderSessionCard(session, index, questionIndex));
-        });
+        const renderHistoryList = function () {
+          target.querySelectorAll(".performance-session-card").forEach(function (card) { card.remove(); });
+          target.querySelectorAll(".performance-history-empty").forEach(function (card) { card.remove(); });
+
+          const visibleSessions = performanceHistoryFilter === "mixed" ? mixedSessions : sectionalSessions;
+          const visibleIds = new Set(visibleSessions.map(function (session) { return String(session.id); }));
+
+          const tabSectional = $("history-tab-sectional");
+          const tabMixed = $("history-tab-mixed");
+          if (tabSectional) tabSectional.classList.toggle("active", performanceHistoryFilter === "sectional");
+          if (tabMixed) tabMixed.classList.toggle("active", performanceHistoryFilter === "mixed");
+
+          if (!visibleSessions.length) {
+            const empty = document.createElement("div");
+            empty.className = "performance-history-empty";
+            empty.textContent = performanceHistoryFilter === "mixed"
+              ? "এখনও কোনো WBP/KP Mixed Mock Test জমা হয়নি। Dashboard থেকে Mixed Mock Test শুরু করো।"
+              : "এখনও কোনো Sectional Mock Test জমা হয়নি। কোনো Subject থেকে সাধারণ Mock Test Submit করো।";
+            target.appendChild(empty);
+          } else {
+            visibleSessions.forEach(function (session) {
+              const originalIndex = sessions.findIndex(function (item) { return String(item.id) === String(session.id); });
+              target.appendChild(renderSessionCard(session, originalIndex, questionIndex));
+            });
+          }
+
+          updateGeminiPerformanceToolbar();
+        };
+
+        const bindHistoryTab = function (id, value) {
+          const button = $(id);
+          if (button) button.onclick = function () {
+            performanceHistoryFilter = value;
+            renderHistoryList();
+          };
+        };
+        bindHistoryTab("history-tab-sectional", "sectional");
+        bindHistoryTab("history-tab-mixed", "mixed");
 
         $("copy-latest-performance").onclick = async function () {
           if (!sessions.length) return;
-          await copyPerformanceText(buildSessionGeminiExport(sessions[0], 0, questionIndex), $("gemini-performance-copy-feedback"));
+          await copyPerformanceText(
+            buildSessionGeminiExport(sessions[0], 0, questionIndex),
+            $("gemini-performance-copy-feedback")
+          );
         };
 
         $("copy-selected-performance").onclick = async function () {
           const selected = sessions.filter(function (session) {
             return selectedPerformanceSessionIds.has(String(session.id));
-          }).slice(0, 20);
+          });
           if (!selected.length) return;
           const output = [
             "EXAM PREP — MULTIPLE MOCK TEST PERFORMANCE ANALYSIS",
-            "You are my exam coach. Analyze these selected tests together. Identify repeated mistakes, weak subjects/topics, concepts I should revise, and give me a prioritized study plan.",
-            "Selected tests: " + selected.length + " (maximum 20)",
+            "You are my exam coach. Analyze all selected tests together. Identify repeated mistakes, weak subjects/topics, confusing concepts, recurring wrong options, and create a prioritized revision plan. Compare performance across tests and do not assume a reason for an error if the answer history does not show it.",
+            "Selected tests: " + selected.length,
             ""
           ];
           selected.forEach(function (session, selectedIndex) {
@@ -769,46 +810,40 @@
           await copyPerformanceText(output.join("\n"), $("gemini-performance-copy-feedback"));
         };
 
-        $("select-latest-20-performance").onclick = function () {
-          selectedPerformanceSessionIds.clear();
-          sessions.slice(0, 20).forEach(function (session) {
+        $("select-all-performance").onclick = function () {
+          sessions.forEach(function (session) {
             selectedPerformanceSessionIds.add(String(session.id));
           });
-          target.querySelectorAll(".performance-session-select").forEach(function (checkbox) {
-            checkbox.checked = selectedPerformanceSessionIds.has(checkbox.dataset.sessionId);
-          });
-          updateGeminiPerformanceToolbar();
+          renderHistoryList();
+          $("gemini-performance-copy-feedback").textContent =
+            sessions.length + "টি Test নির্বাচন করা হয়েছে। কোনো ২০টি Test-এর সীমা নেই।";
         };
 
         $("clear-performance-selection").onclick = function () {
           selectedPerformanceSessionIds.clear();
-          target.querySelectorAll(".performance-session-select").forEach(function (checkbox) { checkbox.checked = false; });
-          updateGeminiPerformanceToolbar();
+          renderHistoryList();
           $("gemini-performance-copy-feedback").textContent = "Selection Clear হয়েছে।";
         };
-        updateGeminiPerformanceToolbar();
+
+        renderHistoryList();
       }
 
       if (attempts.length) {
         const heading = document.createElement("h3");
         heading.textContent = "আগের Individual Question History";
         target.appendChild(heading);
-
         attempts.forEach(function (attempt, index) {
           const card = document.createElement("article");
           card.className = "performance-card";
-
           const title = document.createElement("strong");
           title.textContent = (index + 1) + ". Question ID " + attempt.question_id +
             " — " + (attempt.is_correct ? "সঠিক" : "ভুল");
           card.appendChild(title);
-
           const detail = document.createElement("div");
           detail.className = "perf-metrics";
           detail.textContent = "তোমার উত্তর: " + (attempt.selected_answer || "দেওয়া হয়নি") +
             " • Context: " + (attempt.context_type || "practice");
           card.appendChild(detail);
-
           const date = document.createElement("div");
           date.className = "perf-date";
           date.textContent = formatDate(attempt.attempted_at);
