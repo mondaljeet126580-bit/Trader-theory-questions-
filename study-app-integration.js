@@ -437,7 +437,7 @@
   App.cancelMixedMockInstructions = function () {
     this.pendingMixedExamType = null;
     this.mixedExamConfig = null;
-    this.switchView("home-view");
+    this.switchView("dashboard-view");
   };
 
   App.confirmStartMixedMock = async function () {
