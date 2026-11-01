@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#081325">
-  <title>Admin Panel | WBP & KP MCQ Hub</title>
+  <title>Local Admin Panel | Exam Prep</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -86,11 +86,11 @@
   <main class="wrap">
     <header class="top">
       <div>
-        <div class="brand">WBP & KP EXAM HUB</div>
-        <h1>Admin Panel</h1>
-        <div class="muted">Subject তৈরি করুন এবং একসঙ্গে অনেক MCQ যোগ করুন</div>
+        <div class="brand">EXAM PREP • LOCAL ADMIN TOOL</div>
+        <h1>Local Admin Panel</h1>
+        <div class="muted">এই প্যানেল ZIP থেকে নিজের ফোনে চালান; পরিবর্তন একই Supabase database-এ save হবে</div>
       </div>
-      <a class="linkbtn" href="index.html">← মূল অ্যাপে ফিরুন</a>
+      <a id="open-user-app-link" class="linkbtn hidden" href="https://mondaljeet126580-bit.github.io/Trader-theory-questions/" target="_blank" rel="noopener">↗ Exam Prep User App খুলুন</a>
     </header>
 
     <section id="admin-login-panel" class="panel">
@@ -111,8 +111,8 @@
         <button id="admin-logout-btn" class="fit" type="button">Sign out</button>
       </div>
       <div class="notice info">
-        <strong>Private Admin content</strong><br>
-        নতুন Subject ও প্রশ্ন তোমার Admin passcode session-এর নির্ধারিত owner_id দিয়ে Supabase-এ private/unpublished হিসেবে সংরক্ষিত হবে। এই tab-এ unlock থাকা অবস্থায় মূল app-এও তোমার private upload দেখা যাবে।
+        <strong>Local Admin • Shared Supabase</strong><br>
+        এই Admin Panel GitHub Pages-এ রাখা হবে না। এখানে যোগ/rename/delete করা Subject ও Questions একই Supabase database-এ save হবে। User App-এ private content দেখাতে উপরের “Exam Prep User App খুলুন” link ব্যবহার করো।
       </div>
 
     <section class="panel">
@@ -143,6 +143,14 @@
       </div>
       <label for="subject-select">যে Subject-এ কাজ করবে</label>
       <div id="management-subject-name" class="format">উপরের Subject নির্বাচন করুন।</div>
+
+      <h3 style="margin:18px 0 8px;">Subject-এর নাম পরিবর্তন</h3>
+      <p class="small">নতুন নাম দিলে শুধু display name বদলাবে; slug ও ওই Subject-এর সব Question mapping অপরিবর্তিত থাকবে।</p>
+      <div class="row">
+        <input id="rename-subject-name" maxlength="100" placeholder="নতুন Subject-এর নাম লিখুন">
+        <button id="rename-subject-btn" class="primary fit" type="button">✎ Rename Subject</button>
+      </div>
+
       <div class="actions">
         <button id="clear-subject-questions-btn" class="danger" type="button">🗑️ এই Subject-এর সব প্রশ্ন মুছুন</button>
         <button id="delete-subject-btn" class="danger" type="button">✖ এই Subject-সহ তার Data Delete</button>
