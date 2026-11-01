@@ -4,6 +4,22 @@
   const TOKEN_KEY = "study_admin_session_token";
   const $ = function (id) { return document.getElementById(id); };
   let workspaceOpened = false;
+  const USER_APP_URL = "https://mondaljeet126580-bit.github.io/Trader-theory-questions/";
+
+  function setUserAppLink(token) {
+    const link = $("open-user-app-link");
+    if (!link || !token) return;
+    link.href = USER_APP_URL + "#admin_session=" + encodeURIComponent(token);
+    link.classList.remove("hidden");
+    link.setAttribute("aria-label", "Open the Exam Prep User App with temporary private access");
+  }
+
+  function hideUserAppLink() {
+    const link = $("open-user-app-link");
+    if (!link) return;
+    link.classList.add("hidden");
+    link.href = USER_APP_URL;
+  }
 
   function message(text, error) {
     const target = $("admin-auth-message");
@@ -39,6 +55,7 @@
       // main app can read private questions after same-browser navigation.
       localStorage.setItem(TOKEN_KEY, token);
       try { sessionStorage.removeItem(TOKEN_KEY); } catch (_) {}
+      setUserAppLink(token);
       $("admin-passcode").value = "";
       $("admin-login-panel").classList.add("hidden");
       $("admin-workspace").classList.remove("hidden");
@@ -77,6 +94,7 @@
       sessionStorage.removeItem(TOKEN_KEY);
     } catch (_) {}
     workspaceOpened = false;
+    hideUserAppLink();
     $("admin-workspace").classList.add("hidden");
     $("admin-login-panel").classList.remove("hidden");
     $("admin-passcode").value = "";
@@ -101,6 +119,7 @@
       $("admin-passcode").placeholder = "এই browser-এ Admin unlock করা আছে";
       message("এই browser-এর Admin session যাচাই হচ্ছে...", false);
 
+      setUserAppLink(existingToken);
       window.supabaseClient.rpc("study_admin_load_content", { p_token: existingToken })
         .then(function (result) {
           if (result.error) throw result.error;
