@@ -436,8 +436,8 @@
       chip.textContent = section.name + " · " + section.count;
       chip.setAttribute("aria-label", section.name + " Set, " + section.count + " questions");
       chip.addEventListener("click", function () {
-        if (window.App && typeof window.App.jumpToMixedSection === "function") {
-          window.App.jumpToMixedSection(section.key);
+        if (App && typeof App.jumpToMixedSection === "function") {
+          App.jumpToMixedSection(section.key);
         }
       });
       chips.appendChild(chip);
@@ -451,8 +451,8 @@
 
     host.classList.remove("hidden");
 
-    if (window.App && typeof window.App.updateMixedSectionButtons === "function") {
-      window.App.updateMixedSectionButtons();
+    if (App && typeof App.updateMixedSectionButtons === "function") {
+      App.updateMixedSectionButtons();
     }
   }
 
