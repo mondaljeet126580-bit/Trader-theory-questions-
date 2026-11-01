@@ -6,7 +6,7 @@ This integration uses only the Supabase project named Trader-theory-questions- (
 
 ## Main app
 
-The main app no longer displays a Supabase email/password login form. It opens in Guest mode and reads only published rows through the existing RLS policies. It refreshes the question bank on `pageshow`, window focus, document visibility return, and Admin-session storage changes. This ensures question additions/deletions and subject changes appear when returning from the Admin Panel.
+The main app no longer displays a Supabase email/password login form. It opens in Public mode and reads published rows through the existing RLS policies. All seven existing Subjects and all 2,210 existing MCQs have been set to `is_published = true`, so every visitor can see them without Admin unlock. It refreshes the question bank on `pageshow`, window focus, document visibility return, and Admin-session storage changes. This ensures question additions/deletions and subject changes appear when returning from the Admin Panel.
 
 The Admin Panel is no longer linked or hosted by the public User App. It is distributed as one standalone local HTML file kept on the owner's phone. On unlock, it creates a temporary token. When the user taps the **Open Exam Prep User App** link, the token is passed in a URL fragment to the hosted User App, which stores it in its own localStorage and immediately removes the token from the address bar. The token expires server-side after four hours and is removed/revoked by the Admin Lock action.
 
@@ -68,7 +68,7 @@ All 13 existing MCQ rows were deleted across the six Subjects as requested. Subj
 ## Existing schema changes already applied
 
 - Added nullable owner_id columns to public.subjects and public.mcq_questions.
-- New subjects default to unpublished/private.
+- New subjects created by the local Admin are published immediately (`is_published = true`).
 - Public SELECT policies continue to return published content. The Admin passcode RPC returns only published rows plus rows owned by its configured Admin.
 - Existing personal History question (id 16) remains assigned to the existing Admin owner and unpublished.
 - Added public.study_practice_sessions with RLS on user-owned rows for existing authenticated workflows. The new Admin RPC writes/reads it through the verified passcode session.
