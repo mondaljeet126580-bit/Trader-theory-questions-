@@ -213,146 +213,287 @@
     }
   };
 
-  App.startMixedMock = function (examType) {
+  App.pendingMixedExamType = null;
+
+  function getMixedExamConfig(examType) {
     const configs = {
       wbp: {
-        mode: "mixed_wbp",
+        key: "wbp", mode: "mixed_wbp",
         title: "WBP Constable Written — Mixed Mock",
-        totalQuestions: 85,
-        minutes: 60,
-        negativeMarking: 0.25
+        totalQuestions: 85, minutes: 60, negativeMarking: 0.25,
+        sectionPlan: { general: 25, english: 10, math: 25, reasoning: 25 }
       },
       kp: {
-        mode: "mixed_kp",
+        key: "kp", mode: "mixed_kp",
         title: "Kolkata Police Preliminary — Mixed Mock",
-        totalQuestions: 100,
-        minutes: 60,
-        negativeMarking: 0.25
+        totalQuestions: 100, minutes: 60, negativeMarking: 0.25,
+        sectionPlan: { general: 40, math: 30, reasoning: 30 }
       }
     };
-    const config = configs[String(examType || "").toLowerCase()];
-    if (!config) {
-      alert("WBP অথবা KP Mixed Mock নির্বাচন করুন।");
-      return;
+    return configs[String(examType || "").toLowerCase()] || null;
+  }
+
+  function shuffleMixedRows(rows) {
+    const result = rows.slice();
+    for (let i = result.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = result[i]; result[i] = result[j]; result[j] = tmp;
     }
+    return result;
+  }
 
-    const entries = Object.entries(questionsDatabase || {})
-      .map(function (entry) {
-        const key = entry[0];
-        const rows = Array.isArray(entry[1]) ? entry[1] : [];
-        const label = App.getSubjectDisplayName(key);
-        const identity = (key + " " + label).toLowerCase();
-        let category = "general";
-        if (/math|গণিত/.test(identity)) category = "math";
-        else if (/english|ইংরেজি/.test(identity)) category = "english";
-        else if (/reason|logical|রিজনিং|যুক্তি/.test(identity)) category = "reasoning";
+  function mixedQuestionIdentity(subjectKey, question) {
+    return String(subjectKey) + "::" + String(question.id != null ? question.id : question.no);
+  }
 
-        return {
-          key: key,
-          name: label,
-          category: category,
-          rows: rows.slice().filter(function (q) {
-            return q && q.options && q.correct && q.bn;
-          }).sort(function () { return Math.random() - 0.5; })
-        };
-      })
-      .filter(function (entry) { return entry.rows.length > 0; })
-      .sort(function () { return Math.random() - 0.5; });
+  function getCurrentMixedBankEntries() {
+    return Object.entries(questionsDatabase || {}).map(function (entry) {
+      const key = entry[0];
+      const rows = Array.isArray(entry[1]) ? entry[1] : [];
+      const label = App.getSubjectDisplayName(key);
+      const identity = (key + " " + label).toLowerCase();
+      let category = "general";
+      if (/math|গণিত/.test(identity)) category = "math";
+      else if (/english|ইংরেজি/.test(identity)) category = "english";
+      else if (/reason|logical|রিজনিং|যুক্তি/.test(identity)) category = "reasoning";
+      return {
+        key: key,
+        name: label,
+        category: category,
+        rows: rows.filter(function (q) { return q && q.options && q.correct && q.bn; })
+      };
+    }).filter(function (entry) { return entry.rows.length > 0; });
+  }
 
-    const availableCount = entries.reduce(function (sum, entry) {
-      return sum + entry.rows.length;
-    }, 0);
-    if (availableCount < config.totalQuestions) {
-      alert("এই Mixed Mock-এর জন্য " + config.totalQuestions +
-        "টি প্রশ্ন দরকার, কিন্তু বর্তমানে " + availableCount + "টি প্রশ্ন পাওয়া গেছে।");
-      return;
-    }
+  function renderMixedBankCounts(entries) {
+    const host = $("mixed-instruction-subject-counts");
+    if (!host) return;
+    host.innerHTML = "";
+    entries.forEach(function (entry) {
+      const row = document.createElement("div");
+      row.className = "mixed-subject-count-row";
+      const name = document.createElement("span");
+      name.textContent = entry.name;
+      const count = document.createElement("strong");
+      count.textContent = entry.rows.length.toLocaleString("en-IN") + " প্রশ্ন";
+      row.appendChild(name); row.appendChild(count); host.appendChild(row);
+    });
+    const total = entries.reduce(function (sum, entry) { return sum + entry.rows.length; }, 0);
+    $("mixed-instruction-bank-total").textContent = total.toLocaleString("en-IN") + " প্রশ্ন";
+  }
 
-    const sectionPlan = examType === "wbp"
-      ? { general: 25, english: 10, math: 25, reasoning: 25 }
-      : { general: 40, math: 30, reasoning: 30 };
-
-    function sampleRoundRobin(subjectEntries, requiredCount) {
-      const source = subjectEntries.map(function (entry) {
-        return { key: entry.key, name: entry.name, rows: entry.rows.slice() };
-      }).sort(function () { return Math.random() - 0.5; });
-      const chosen = [];
-      let cursor = 0;
-
-      while (chosen.length < requiredCount) {
-        let added = false;
-        for (let i = 0; i < source.length && chosen.length < requiredCount; i += 1) {
-          const entry = source[(i + cursor) % source.length];
-          if (!entry || !entry.rows.length) continue;
-          const question = entry.rows.pop();
-          chosen.push(Object.assign({}, question, {
-            _subjectKey: entry.key,
-            _subjectName: entry.name
-          }));
-          added = true;
-        }
-        if (!added) break;
-        cursor += 1;
+  function sampleMixedFallback(entries, requiredCount) {
+    const sources = entries.map(function (entry) {
+      return { key: entry.key, name: entry.name, rows: shuffleMixedRows(entry.rows) };
+    }).sort(function () { return Math.random() - 0.5; });
+    const chosen = [];
+    let round = 0;
+    while (chosen.length < requiredCount) {
+      let added = false;
+      for (let i = 0; i < sources.length && chosen.length < requiredCount; i += 1) {
+        const entry = sources[(i + round) % sources.length];
+        if (!entry || !entry.rows.length) continue;
+        const question = entry.rows.pop();
+        chosen.push(Object.assign({}, question, { _subjectKey: entry.key, _subjectName: entry.name }));
+        added = true;
       }
-      return chosen;
+      if (!added) break;
+      round += 1;
+    }
+    return chosen;
+  }
+
+  function sampleMixedSubjectRoundRobin(subjectEntries, requiredCount, recentlyUsed) {
+    const source = subjectEntries.map(function (entry) {
+      return {
+        key: entry.key,
+        name: entry.name,
+        unused: shuffleMixedRows(entry.rows.filter(q => !recentlyUsed.has(mixedQuestionIdentity(entry.key, q)))),
+        previous: shuffleMixedRows(entry.rows.filter(q => recentlyUsed.has(mixedQuestionIdentity(entry.key, q))))
+      };
+    }).sort(function () { return Math.random() - 0.5; });
+
+    const chosen = [];
+    let cursor = 0;
+    while (chosen.length < requiredCount) {
+      let added = false;
+      for (let i = 0; i < source.length && chosen.length < requiredCount; i += 1) {
+        const entry = source[(i + cursor) % source.length];
+        if (!entry || !entry.unused.length) continue;
+        const question = entry.unused.pop();
+        chosen.push(Object.assign({}, question, { _subjectKey: entry.key, _subjectName: entry.name }));
+        added = true;
+      }
+      if (!added) break;
+      cursor += 1;
     }
 
-    const exactSubjectSplitAvailable = Object.entries(sectionPlan).every(function (item) {
-      const category = item[0];
-      const required = item[1];
-      const available = entries
-        .filter(function (entry) { return entry.category === category; })
-        .reduce(function (sum, entry) { return sum + entry.rows.length; }, 0);
-      return available >= required;
+    if (chosen.length < requiredCount) {
+      const fallback = sampleMixedFallback(
+        source.map(entry => ({ key: entry.key, name: entry.name, rows: entry.previous })),
+        requiredCount - chosen.length
+      );
+      chosen.push.apply(chosen, fallback);
+    }
+    return chosen;
+  }
+
+  function buildMixedPaper(config, entries) {
+    const availableCount = entries.reduce(function (sum, entry) { return sum + entry.rows.length; }, 0);
+    if (availableCount < config.totalQuestions) {
+      throw new Error("এই পরীক্ষার জন্য " + config.totalQuestions +
+        "টি প্রশ্ন দরকার, কিন্তু বর্তমানে " + availableCount + "টি valid প্রশ্ন পাওয়া গেছে।");
+    }
+
+    const exactSubjectSplitAvailable = Object.entries(config.sectionPlan).every(function (item) {
+      const category = item[0], needed = item[1];
+      const available = entries.filter(entry => entry.category === category)
+        .reduce((sum, entry) => sum + entry.rows.length, 0);
+      return available >= needed;
     });
 
     let pool = [];
     if (exactSubjectSplitAvailable) {
-      Object.entries(sectionPlan).forEach(function (item) {
-        const category = item[0];
-        const required = item[1];
-        const chosen = sampleRoundRobin(
-          entries.filter(function (entry) { return entry.category === category; }),
-          required
-        );
-        pool = pool.concat(chosen);
+      Object.entries(config.sectionPlan).forEach(function (item) {
+        pool = pool.concat(sampleMixedSubjectRoundRobin(
+          entries.filter(entry => entry.category === item[0]),
+          item[1],
+          config.recentlyUsed
+        ));
       });
-      pool.sort(function () { return Math.random() - 0.5; });
+      pool = shuffleMixedRows(pool);
     } else {
-      // Until all required section banks exist, fairly sample across every populated Subject.
-      pool = sampleRoundRobin(entries, config.totalQuestions);
+      pool = sampleMixedSubjectRoundRobin(entries, config.totalQuestions, config.recentlyUsed);
     }
+    if (pool.length !== config.totalQuestions) throw new Error("প্রয়োজনীয় প্রশ্নসংখ্যার নতুন Mixed Paper তৈরি করা যায়নি।");
 
     config.exactSubjectSplit = exactSubjectSplitAvailable;
+    config.availableQuestionCount = availableCount;
+    config.subjectCounts = pool.reduce(function (counts, question) {
+      const name = question._subjectName || "Unknown";
+      counts[name] = (counts[name] || 0) + 1;
+      return counts;
+    }, {});
+    config.selectedQuestionKeys = pool.map(question => mixedQuestionIdentity(question._subjectKey, question));
+    return pool;
+  }
 
-    if (pool.length !== config.totalQuestions) {
-      alert("প্রয়োজনীয় প্রশ্নসংখ্যা তৈরি করা যায়নি।");
-      return;
-    }
+  function showMixedPaperComposition(config) {
+    const host = $("mock-paper-info");
+    if (!host) return;
+    host.innerHTML = "";
+    const heading = document.createElement("div");
+    heading.className = "mock-paper-info-title";
+    heading.textContent = (config.key === "wbp" ? "WBP" : "KP") +
+      " Mixed Paper · " + config.totalQuestions + " Questions · 60 Minutes";
+    host.appendChild(heading);
+    const chips = document.createElement("div");
+    chips.className = "mock-paper-info-chips";
+    Object.entries(config.subjectCounts || {}).forEach(function (item) {
+      const chip = document.createElement("span");
+      chip.className = "mock-paper-info-chip";
+      chip.textContent = item[0] + " · " + item[1];
+      chips.appendChild(chip);
+    });
+    host.appendChild(chips);
+    host.classList.remove("hidden");
+  }
 
-    this.mixedExamConfig = config;
-    this.configRange.specialFilter = null;
-    $("mock-size-select").value = String(config.totalQuestions);
-    $("mock-timer-select").value = String(config.minutes);
-    $("mock-target-select").value = "ALL";
-    $("mock-order-select").value = "SHUFFLE";
+  App.startMixedMock = async function (examType) {
+    const config = getMixedExamConfig(examType);
+    if (!config) { alert("WBP অথবা KP Mixed Mock নির্বাচন করুন।"); return; }
 
-    const oldGetActiveDataset = this.getActiveDataset;
-    this.getActiveDataset = function () { return pool; };
+    this.pendingMixedExamType = config.key;
+    this.mixedExamConfig = null;
+    this.switchView("mixed-instruction-view");
+    $("mixed-instruction-title").textContent = config.title;
+    $("mixed-instruction-subtitle").textContent = "প্রশ্নব্যাংকের বর্তমান অবস্থা ও পরীক্ষার নিয়ম দেখে তারপর পরীক্ষা শুরু করো।";
+    $("mixed-instruction-total").textContent = String(config.totalQuestions);
+    $("mixed-instruction-time").textContent = config.minutes + " min";
+    $("mixed-instruction-negative").textContent = "¼";
+    $("mixed-instruction-status").textContent = "Supabase থেকে সর্বশেষ প্রশ্নব্যাংক লোড হচ্ছে...";
+    $("mixed-confirm-start").disabled = true;
+    $("mixed-confirm-start").textContent = "প্রশ্নব্যাংক লোড হচ্ছে...";
+
     try {
-      this.startMockMode();
-    } finally {
-      this.getActiveDataset = oldGetActiveDataset;
-    }
-
-    if ($("mock-view").classList.contains("hidden") ||
-        !this.mockState.activePool ||
-        this.mockState.activePool.length !== config.totalQuestions) {
-      this.mixedExamConfig = null;
-      alert("Mixed Mock শুরু করা যায়নি। আবার চেষ্টা করুন।");
-      return;
+      await this.refreshQuestionData({});
+      const entries = getCurrentMixedBankEntries();
+      renderMixedBankCounts(entries);
+      const available = entries.reduce((sum, entry) => sum + entry.rows.length, 0);
+      $("mixed-instruction-warning").textContent = available < config.totalQuestions
+        ? "বর্তমানে " + available + "টি valid প্রশ্ন পাওয়া গেছে; এই পরীক্ষা শুরু করতে অন্তত " + config.totalQuestions + "টি দরকার।"
+        : "প্রতিবার Start চাপলে Supabase থেকে আবার latest data নেওয়া হবে এবং আগের Paper-এর প্রশ্ন এড়িয়ে নতুন random set বানানোর চেষ্টা করা হবে।";
+      $("mixed-instruction-status").textContent = "নির্দেশাবলী পড়ে Start Exam চাপো।";
+      $("mixed-confirm-start").disabled = available < config.totalQuestions;
+      $("mixed-confirm-start").textContent = "🚀 নির্দেশনা পড়েছি — পরীক্ষা শুরু করুন";
+    } catch (error) {
+      $("mixed-instruction-warning").textContent = "Question Bank লোড হয়নি: " + (error.message || String(error));
+      $("mixed-instruction-status").textContent = "Internet connection পরীক্ষা করে আবার চেষ্টা করো।";
+      $("mixed-confirm-start").disabled = true;
+      $("mixed-confirm-start").textContent = "প্রশ্নব্যাংক পাওয়া যায়নি";
     }
   };
+
+  App.cancelMixedMockInstructions = function () {
+    this.pendingMixedExamType = null;
+    this.mixedExamConfig = null;
+    this.switchView("home-view");
+  };
+
+  App.confirmStartMixedMock = async function () {
+    const config = getMixedExamConfig(this.pendingMixedExamType);
+    if (!config) return;
+    const button = $("mixed-confirm-start");
+    const status = $("mixed-instruction-status");
+    button.disabled = true;
+    button.textContent = "সর্বশেষ Question Bank থেকে Paper তৈরি হচ্ছে...";
+    status.textContent = "Supabase থেকে নতুন প্রশ্ন ও Subject Refresh হচ্ছে...";
+
+    try {
+      await this.refreshQuestionData({});
+      const entries = getCurrentMixedBankEntries();
+      const available = entries.reduce((sum, entry) => sum + entry.rows.length, 0);
+      config.recentlyUsed = new Set();
+      try {
+        const prior = JSON.parse(localStorage.getItem("exam_prep_last_mixed_paper_" + config.key) || "[]");
+        if (Array.isArray(prior)) prior.forEach(key => config.recentlyUsed.add(String(key)));
+      } catch (_) {}
+
+      const pool = buildMixedPaper(config, entries);
+      config.exactSubjectSplit = !!config.exactSubjectSplit;
+      config.availableQuestionCount = available;
+      this.mixedExamConfig = config;
+      this.configRange.specialFilter = null;
+      $("mock-size-select").value = String(config.totalQuestions);
+      $("mock-timer-select").value = String(config.minutes);
+      $("mock-target-select").value = "ALL";
+      $("mock-order-select").value = "SHUFFLE";
+
+      const originalGetActiveDataset = this.getActiveDataset;
+      this.getActiveDataset = function () { return pool; };
+      try { this.startMockMode(); }
+      finally { this.getActiveDataset = originalGetActiveDataset; }
+
+      if ($("mock-view").classList.contains("hidden") ||
+          !this.mockState.activePool ||
+          this.mockState.activePool.length !== config.totalQuestions) {
+        this.mixedExamConfig = null;
+        throw new Error("Mixed Mock চালু করা যায়নি। আবার চেষ্টা করো।");
+      }
+
+      try {
+        localStorage.setItem("exam_prep_last_mixed_paper_" + config.key, JSON.stringify(config.selectedQuestionKeys));
+      } catch (_) {}
+      showMixedPaperComposition(config);
+      this.pendingMixedExamType = null;
+    } catch (error) {
+      console.error("Mixed Mock could not start.", error);
+      status.textContent = error.message || String(error);
+      button.disabled = false;
+      button.textContent = "আবার চেষ্টা করুন";
+    }
+  };
+
 
   const originalSubmitMock = App.submitMock;
   App.submitMock = async function () {
@@ -374,7 +515,9 @@
 
       return {
         question_id: question.id || null,
+        paper_question_no: index + 1,
         question_no: question.no,
+        database_question_no: question.no,
         question_bn: question.bn || question.question || "",
         subject_name: question._subjectName || this.getSubjectDisplayName(this.currentSubject),
         subject_key: question._subjectKey || this.currentSubject,
@@ -521,7 +664,10 @@
       const state = answer.is_correct ? "CORRECT" : (answer.selected_answer ? "WRONG" : "SKIPPED");
       lines.push("");
       lines.push("Subject: " + (answer.subject_name || (linked && linked._subjectName) || session.subject_name || "Unknown"));
-      lines.push("Q" + (answer.question_no || answerIndex + 1) + ": " + (answer.question_bn || (linked && (linked.bn || linked.question)) || "Question text unavailable"));
+      lines.push("Paper Q" + (answer.paper_question_no || answerIndex + 1) +
+        " · Database Source: " + (answer.subject_name || session.subject_name || "Unknown") +
+        " · Original DB Question No. " + (answer.database_question_no || answer.question_no || "—") +
+        ": " + (answer.question_bn || (linked && (linked.bn || linked.question)) || "Question text unavailable"));
       if (answer.en || (linked && linked.en)) lines.push("English: " + (answer.en || linked.en));
       Object.keys(options).forEach(function (key) {
         lines.push(key + ") " + options[key]);
@@ -681,9 +827,10 @@
       row.className = "performance-answer-card " + state;
       const question = document.createElement("div");
       question.className = "performance-answer-question";
-      question.textContent = (answer.subject_name ? "[" + answer.subject_name + "] " : "") +
-        "Q" + (answer.question_no || answerIndex + 1) + ". " +
-        (answer.question_bn || (linked && (linked.bn || linked.question)) || "Question text unavailable");
+      question.textContent = "Paper Q" + (answer.paper_question_no || answerIndex + 1) +
+        " · " + (answer.subject_name || session.subject_name || "Unknown") +
+        " · DB Q" + (answer.database_question_no || answer.question_no || "—") +
+        " — " + (answer.question_bn || (linked && (linked.bn || linked.question)) || "Question text unavailable");
       row.appendChild(question);
 
       const meta = document.createElement("div");
