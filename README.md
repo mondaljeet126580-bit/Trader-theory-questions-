@@ -5,7 +5,7 @@ A Bengali-first static MCQ study and mock-test application connected to the exis
 ## Run / publish
 
 - Open index.html for the main study and mock-test app. It opens in Guest mode without an email or password form.
-- Open admin.html for the Admin Panel. Only the Admin Panel asks for the additional passcode.
+- The Admin Panel is distributed separately as a private local ZIP; it is not linked or hosted inside the public User App.
 - To publish with GitHub Pages, choose the main branch and root folder in Settings → Pages.
 
 ## Main app access
@@ -13,8 +13,9 @@ A Bengali-first static MCQ study and mock-test application connected to the exis
 The main app does not require Supabase email/password sign-in.
 
 - Visitors see subjects and questions marked as published.
-- If the Admin Panel is unlocked in the same browser, the main app can also load the Admin's private uploads using the temporary Admin session token, including after navigation, reload, or opening another tab.
-- That token is kept in browser localStorage (not the passcode), is validated by the server, and expires after four hours. The Admin Lock action revokes it and clears it from localStorage.
+- The User App has no Admin Panel button or published Admin UI.
+- Open the local Admin ZIP, unlock it, then use its **Open Exam Prep User App** link. This transfers a short-lived Admin session through a URL fragment; the User App stores it in its own browser origin and immediately clears the fragment from the address bar.
+- The token is not the passcode, is validated by Supabase, expires after four hours, and is revoked by the Admin Lock action.
 - Closing the tab clears the browser-held token. The Admin must unlock again to view private content.
 - No passcode is embedded in HTML or JavaScript.
 
@@ -22,7 +23,7 @@ Without Admin unlock, past performance is stored in that browser's local storage
 
 ## Admin Panel access
 
-The Admin Panel requires only the additional Admin passcode. It does not ask for Supabase email or account password.
+The standalone local Admin ZIP requires only the additional Admin passcode. It does not ask for Supabase email or account password. The ZIP is not committed to the public GitHub Pages branch.
 
 The passcode is verified by public.unlock_study_admin(text). That database function checks the stored salted iterative hash and creates a high-entropy, short-lived token. The raw passcode is not included in this repository. Failed attempts are rate-limited by source/IP and user agent; five failures cause a 15-minute lockout.
 
@@ -94,9 +95,7 @@ No WhatsApp/chat tables or policies were changed.
 ## Repository files
 
 - index.html — main guest-mode study/mock-test UI.
-- admin.html — single-passcode Admin Panel.
-- admin.js — bulk question parser, validation, preview, and subject operations.
-- admin-auth.js — passcode-only Admin session unlock/lock.
+- Local Admin ZIP — contains admin.html, admin.js, and admin-auth.js; keep it on your phone and do not publish it.
 - supabase-client.js — Supabase URL and publishable client configuration.
 - supabase-question-store.js — public content, passcode RPC, and performance adapter.
 - study-app-integration.js — Guest mode, private content loading, and performance history.
@@ -108,4 +107,6 @@ No WhatsApp/chat tables or policies were changed.
 - The passcode is six digits, so keep the rate limit active and do not share it. A longer passphrase would be safer.
 - Question import has no application-level total-count cap; Supabase API request, row-size, and project limits still apply.
 - The current Admin session is tied to the single existing row in study_admins; if you later add more Admins, review whether each should share this passcode system.
+- Subject names can be changed from the local Admin ZIP. The internal slug and subject_id relationship stay unchanged, so existing questions remain attached to the same Subject.
+- All local Admin actions still require an internet connection because Supabase is the shared cloud database.
 - GitHub Pages deployment status still needs a live browser check after the latest commits.
