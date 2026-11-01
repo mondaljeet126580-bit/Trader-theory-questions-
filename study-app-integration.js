@@ -115,8 +115,8 @@
 
       if (status) {
         status.textContent = hasAdminAccess
-          ? "Admin unlock active — তোমার private ও published প্রশ্ন লোড হয়েছে।"
-          : "Guest mode — published প্রশ্ন দেখা যাচ্ছে। তোমার private প্রশ্ন দেখতে Admin Panel unlock করো।";
+          ? "Local Admin Tool access active — তোমার private ও published প্রশ্ন লোড হয়েছে।"
+          : "Guest mode — published প্রশ্ন দেখা যাচ্ছে। Private প্রশ্ন দেখতে local Admin ZIP খুলে User App access চালু করো।";
       }
 
       // If the user returns to Study Mode after visiting the Admin Panel,
@@ -127,7 +127,7 @@
       }
 
       if (!keys.length && status) {
-        status.textContent = "এখনও কোনো published Subject নেই। Admin Panel থেকে private Subject যোগ করে unlock করুন।";
+        status.textContent = "এখনও কোনো published Subject নেই। Local Admin ZIP থেকে Subject যোগ করে User App-এ access পাঠান।";
       }
 
       return data;
@@ -269,7 +269,7 @@
 
       if (status) status.textContent = currentAdminToken()
         ? "✓ তোমার Performance Supabase-এ private ভাবে সংরক্ষিত হয়েছে।"
-        : "✓ তোমার Performance এই browser-এ সংরক্ষিত হয়েছে। Admin unlock করলে cloud history-ও ব্যবহার হবে।";
+        : "✓ তোমার Performance এই browser-এ সংরক্ষিত হয়েছে। Local Admin access দিলে cloud history-ও ব্যবহার হবে।";
     } catch (error) {
       console.error("Performance history could not be saved.", error);
       if (status) status.textContent = "Performance save হয়নি: " + (error.message || String(error));
