@@ -220,14 +220,12 @@
       wbp: {
         key: "wbp", mode: "mixed_wbp",
         title: "WBP Constable Written — Mixed Mock",
-        totalQuestions: 85, minutes: 60, negativeMarking: 0.25,
-        sectionPlan: { general: 25, english: 10, math: 25, reasoning: 25 }
+        totalQuestions: 85, minutes: 60, negativeMarking: 0.25
       },
       kp: {
         key: "kp", mode: "mixed_kp",
         title: "Kolkata Police Preliminary — Mixed Mock",
-        totalQuestions: 100, minutes: 60, negativeMarking: 0.25,
-        sectionPlan: { general: 40, math: 30, reasoning: 30 }
+        totalQuestions: 100, minutes: 60, negativeMarking: 0.25
       }
     };
     return configs[String(examType || "").toLowerCase()] || null;
@@ -282,94 +280,82 @@
     $("mixed-instruction-bank-total").textContent = total.toLocaleString("en-IN") + " প্রশ্ন";
   }
 
-  function sampleMixedFallback(entries, requiredCount) {
-    const sources = entries.map(function (entry) {
-      return { key: entry.key, name: entry.name, rows: shuffleMixedRows(entry.rows) };
-    }).sort(function () { return Math.random() - 0.5; });
-    const chosen = [];
-    let round = 0;
-    while (chosen.length < requiredCount) {
-      let added = false;
-      for (let i = 0; i < sources.length && chosen.length < requiredCount; i += 1) {
-        const entry = sources[(i + round) % sources.length];
-        if (!entry || !entry.rows.length) continue;
-        const question = entry.rows.pop();
-        chosen.push(Object.assign({}, question, { _subjectKey: entry.key, _subjectName: entry.name }));
-        added = true;
-      }
-      if (!added) break;
-      round += 1;
-    }
-    return chosen;
-  }
-
-  function sampleMixedSubjectRoundRobin(subjectEntries, requiredCount, recentlyUsed) {
-    const source = subjectEntries.map(function (entry) {
+  function sampleMixedSubjectRandom(subjectEntries, requiredCount, recentlyUsed) {
+    // Every available Subject gets an equal chance on each draw.
+    // Within the chosen Subject, select a random question without replacement.
+    const sources = subjectEntries.map(function (entry) {
       return {
         key: entry.key,
         name: entry.name,
-        unused: shuffleMixedRows(entry.rows.filter(q => !recentlyUsed.has(mixedQuestionIdentity(entry.key, q)))),
-        previous: shuffleMixedRows(entry.rows.filter(q => recentlyUsed.has(mixedQuestionIdentity(entry.key, q))))
+        unused: shuffleMixedRows(entry.rows.filter(function (question) {
+          return !recentlyUsed.has(mixedQuestionIdentity(entry.key, question));
+        })),
+        recentlyUsed: shuffleMixedRows(entry.rows.filter(function (question) {
+          return recentlyUsed.has(mixedQuestionIdentity(entry.key, question));
+        }))
       };
-    }).sort(function () { return Math.random() - 0.5; });
+    });
 
     const chosen = [];
-    let cursor = 0;
-    while (chosen.length < requiredCount) {
-      let added = false;
-      for (let i = 0; i < source.length && chosen.length < requiredCount; i += 1) {
-        const entry = source[(i + cursor) % source.length];
-        if (!entry || !entry.unused.length) continue;
-        const question = entry.unused.pop();
-        chosen.push(Object.assign({}, question, { _subjectKey: entry.key, _subjectName: entry.name }));
-        added = true;
+    const chosenIds = new Set();
+
+    function drawFrom(sourceProperty) {
+      while (chosen.length < requiredCount) {
+        const eligible = sources.filter(function (entry) {
+          return entry[sourceProperty].length > 0;
+        });
+        if (!eligible.length) break;
+
+        // Choose a Subject randomly, not in a fixed round-robin sequence.
+        const subject = eligible[Math.floor(Math.random() * eligible.length)];
+        const rows = subject[sourceProperty];
+        const randomIndex = Math.floor(Math.random() * rows.length);
+        const question = rows.splice(randomIndex, 1)[0];
+        const identity = mixedQuestionIdentity(subject.key, question);
+        if (chosenIds.has(identity)) continue;
+
+        chosenIds.add(identity);
+        chosen.push(Object.assign({}, question, {
+          _subjectKey: subject.key,
+          _subjectName: subject.name
+        }));
       }
-      if (!added) break;
-      cursor += 1;
     }
 
+    // First use questions not present in the previous three submitted papers.
+    drawFrom("unused");
+
+    // Only if the remaining unseen bank is too small, reuse older questions.
     if (chosen.length < requiredCount) {
-      const fallback = sampleMixedFallback(
-        source.map(entry => ({ key: entry.key, name: entry.name, rows: entry.previous })),
-        requiredCount - chosen.length
-      );
-      chosen.push.apply(chosen, fallback);
+      drawFrom("recentlyUsed");
     }
+
     return chosen;
   }
 
   function buildMixedPaper(config, entries) {
-    const availableCount = entries.reduce(function (sum, entry) { return sum + entry.rows.length; }, 0);
+    const availableCount = entries.reduce(function (sum, entry) {
+      return sum + entry.rows.length;
+    }, 0);
     if (availableCount < config.totalQuestions) {
       throw new Error("এই পরীক্ষার জন্য " + config.totalQuestions +
         "টি প্রশ্ন দরকার, কিন্তু বর্তমানে " + availableCount + "টি valid প্রশ্ন পাওয়া গেছে।");
     }
 
-    const exactSubjectSplitAvailable = Object.entries(config.sectionPlan).every(function (item) {
-      const category = item[0], needed = item[1];
-      const available = entries.filter(entry => entry.category === category)
-        .reduce((sum, entry) => sum + entry.rows.length, 0);
-      return available >= needed;
-    });
+    // No fixed per-Subject quota: each question draw randomly selects one
+    // currently available Subject, then a random unused question from its bank.
+    const sampledPool = sampleMixedSubjectRandom(
+      entries,
+      config.totalQuestions,
+      config.recentlyUsed || new Set()
+    );
 
-    let sampledPool = [];
-    if (exactSubjectSplitAvailable) {
-      Object.entries(config.sectionPlan).forEach(function (item) {
-        sampledPool = sampledPool.concat(sampleMixedSubjectRoundRobin(
-          entries.filter(entry => entry.category === item[0]),
-          item[1],
-          config.recentlyUsed
-        ));
-      });
-    } else {
-      sampledPool = sampleMixedSubjectRoundRobin(entries, config.totalQuestions, config.recentlyUsed);
-    }
     if (sampledPool.length !== config.totalQuestions) {
-      throw new Error("প্রয়োজনীয় প্রশ্নসংখ্যার নতুন Mixed Paper তৈরি করা যায়নি।");
+      throw new Error("প্রয়োজনীয় প্রশ্নসংখ্যার Random Mixed Paper তৈরি করা যায়নি।");
     }
 
-    // Arrange the paper in separate, consecutive Subject Sets.
-    // The local question number restarts from 1 for every Subject.
+    // Keep the UI's Subject sets grouped, but let the random draw determine
+    // how many questions each Subject contributes to this paper.
     const groupedPool = [];
     const paperSections = [];
     entries.forEach(function (entry) {
@@ -397,7 +383,7 @@
       throw new Error("Subject-wise Mixed Paper তৈরি করা যায়নি। আবার চেষ্টা করুন।");
     }
 
-    config.exactSubjectSplit = exactSubjectSplitAvailable;
+    config.selectionMode = "random_subject_per_question";
     config.availableQuestionCount = availableCount;
     config.paperSections = paperSections;
     config.subjectCounts = paperSections.reduce(function (counts, section) {
@@ -666,7 +652,7 @@
     $("modal-percentage").textContent = score.toFixed(1) + "% নম্বর পেয়েছেন";
     $("res-summary-line").textContent = examConfig
       ? "মোট প্রশ্ন: " + total + " | " + examConfig.title + " | 60 মিনিট" +
-        (examConfig.exactSubjectSplit ? " | Official subject split" : " | Available-subject mixed fallback")
+        " | Random Subject Mix"
       : "মোট প্রশ্ন: " + total + " | নির্বাচিত বিষয়: " + this.getSubjectDisplayName(this.currentSubject);
 
     const negativeNote = $("result-negative-note");
