@@ -501,7 +501,7 @@
       const available = entries.reduce((sum, entry) => sum + entry.rows.length, 0);
       $("mixed-instruction-warning").textContent = available < config.totalQuestions
         ? "বর্তমানে " + available + "টি valid প্রশ্ন পাওয়া গেছে; এই পরীক্ষা শুরু করতে অন্তত " + config.totalQuestions + "টি দরকার।"
-        : "প্রতিবার Start চাপলে Supabase থেকে আবার latest data নেওয়া হবে এবং আগের Paper-এর প্রশ্ন এড়িয়ে নতুন random set বানানোর চেষ্টা করা হবে।";
+        : "প্রতিটি প্রশ্নের জন্য উপলভ্য Subject থেকে Random Subject বেছে Random প্রশ্ন নেওয়া হবে—কোনো fixed subject quota নেই। নতুন Upload পরের Paper-এ আসবে; আগের সর্বশেষ ৩টি Mixed Paper-এর প্রশ্ন এড়ানো হবে, যদি যথেষ্ট নতুন প্রশ্ন থাকে।";
       $("mixed-instruction-status").textContent = "নির্দেশাবলী পড়ে Start Exam চাপো।";
       $("mixed-confirm-start").disabled = available < config.totalQuestions;
       $("mixed-confirm-start").textContent = "🚀 নির্দেশনা পড়েছি — পরীক্ষা শুরু করুন";
@@ -548,7 +548,6 @@
       } catch (_) {}
 
       const pool = buildMixedPaper(config, entries);
-      config.exactSubjectSplit = !!config.exactSubjectSplit;
       config.availableQuestionCount = available;
       this.mixedExamConfig = config;
       this.configRange.specialFilter = null;
@@ -662,7 +661,7 @@
         negativeNote.textContent = "Negative marking: প্রতি ভুলে -" +
           negativeMarking.toFixed(2) + " · মোট penalty -" +
           negativeMarks.toFixed(2) + " · Net marks " + netMarks.toFixed(2) + "/" + total +
-          (examConfig.exactSubjectSplit ? " · Official subject split" : " · Available Subject mix (Math/English bank incomplete)");
+          " · Random Subject Mix (কোনো fixed Subject quota নেই)";
       } else {
         negativeNote.classList.add("hidden");
         negativeNote.textContent = "";
